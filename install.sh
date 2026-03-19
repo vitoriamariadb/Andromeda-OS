@@ -16,10 +16,34 @@ for arg in "$@"; do
     esac
 done
 
-# ---------------------------------------------------------------------------
-# Utilitários
-# ---------------------------------------------------------------------------
+# --- Paleta Dracula para whiptail (NEWT_COLORS) ---
+export NEWT_COLORS='
+root=white,black
+window=white,black
+border=lightcyan,black
+shadow=black,black
+title=white,black
+button=black,white
+actbutton=black,lightcyan
+checkbox=white,black
+actcheckbox=black,lightcyan
+entry=white,black
+label=white,black
+listbox=white,black
+actlistbox=black,lightcyan
+textbox=white,black
+acttextbox=lightcyan,black
+helpline=white,black
+roottext=lightcyan,black
+emptyscale=black,black
+fullscale=lightcyan,black
+disentry=cyan,black
+compactbutton=white,black
+actsellistbox=black,lightcyan
+sellistbox=lightcyan,black
+'
 
+# --- Utilitários ---
 _run() {
     if [[ "$DRY_RUN" == true ]]; then
         echo "[dry-run] $*"
@@ -28,15 +52,33 @@ _run() {
     fi
 }
 
-_info()  { echo "  >> $*"; }
-_ok()    { echo "  OK  $*"; }
-_warn()  { echo "  WARN $*" >&2; }
-_err()   { echo "  ERRO $*" >&2; exit 1; }
+_C_PURPLE='\033[0;35m'
+_C_GREEN='\033[0;32m'
+_C_YELLOW='\033[0;33m'
+_C_RED='\033[0;31m'
+_C_CYAN='\033[0;36m'
+_C_DIM='\033[2m'
+_C_BOLD='\033[1m'
+_C_RESET='\033[0m'
 
-# ---------------------------------------------------------------------------
-# Detecção de gestor de pacotes
-# ---------------------------------------------------------------------------
+_info()  { echo -e "  ${_C_CYAN}>>${_C_RESET} $*"; }
+_ok()    { echo -e "  ${_C_GREEN}OK${_C_RESET}  $*"; }
+_warn()  { echo -e "  ${_C_YELLOW}!!${_C_RESET} $*" >&2; }
+_err()   { echo -e "  ${_C_RED}ERRO${_C_RESET} $*" >&2; exit 1; }
 
+TOTAL_STEPS=13
+CURRENT_STEP=0
+_EXISTING_CONFIG=false
+
+_step() {
+    ((++CURRENT_STEP))
+    local desc="$1"
+    echo ""
+    echo -e "  ${_C_PURPLE}${_C_BOLD}[${CURRENT_STEP}/${TOTAL_STEPS}]${_C_RESET} ${desc}"
+    echo -e "  ${_C_DIM}$(printf '%.0s─' {1..48})${_C_RESET}"
+}
+
+# --- Detecção de gestor de pacotes ---
 _detect_pkg_manager() {
     if command -v apt-get &>/dev/null; then echo "apt"
     elif command -v pacman &>/dev/null; then echo "pacman"
@@ -63,10 +105,7 @@ _install_pkg() {
     esac
 }
 
-# ---------------------------------------------------------------------------
-# TUI: whiptail → dialog → read puro
-# ---------------------------------------------------------------------------
-
+# --- TUI: whiptail → dialog → read puro ---
 _tui_available() {
     command -v whiptail &>/dev/null && echo "whiptail" && return
     command -v dialog   &>/dev/null && echo "dialog"   && return
@@ -77,37 +116,62 @@ _tui() { _tui_available; }
 
 _inputbox() {
     local title="$1" label="$2" default="$3"
-    local tui
+    local tui display_label result
     tui=$(_tui)
+
+    if [[ -n "$default" ]]; then
+        display_label="${label}\n\nAtual: ${default}\n(deixe vazio para manter)"
+    else
+        display_label="$label"
+    fi
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --inputbox "$label" 10 60 "$default" 3>&1 1>&2 2>&3
+            result=$("$tui" --title "$title" --backtitle "Spellbook-OS" \
+                --cancel-button "Voltar" \
+                --inputbox "$display_label" 12 65 "" 3>&1 1>&2 2>&3) || return 1
             ;;
         plain)
-            printf "  %s [%s]: " "$label" "$default" >&2
-            local val
-            read -r val
-            echo "${val:-$default}"
+            if [[ -n "$default" ]]; then
+                printf "  %s [%s]: " "$label" "$default" >&2
+            else
+                printf "  %s: " "$label" >&2
+            fi
+            read -r result
             ;;
     esac
+
+    if [[ -z "$result" && -n "$default" ]]; then
+        echo "$default"
+    else
+        echo "$result"
+    fi
 }
 
 _yesno() {
-    local title="$1" question="$2"
-    local tui
+    local title="$1" question="$2" defaultno="${3:-}"
+    local tui extra_flags=""
     tui=$(_tui)
+
+    [[ "$defaultno" == "defaultno" ]] && extra_flags="--defaultno"
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --yesno "$question" 10 60 3>&1 1>&2 2>&3
+            "$tui" --title "$title" --backtitle "Spellbook-OS" \
+                $extra_flags --yesno "$question" 10 65 3>&1 1>&2 2>&3
             return $?
             ;;
         plain)
-            printf "  %s (s/N): " "$question" >&2
+            local hint="s/N"
+            [[ -z "$defaultno" ]] && hint="S/n"
+            printf "  %s (%s): " "$question" "$hint" >&2
             local val
             read -r val
-            [[ "$val" == "s" || "$val" == "S" || "$val" == "y" || "$val" == "Y" ]]
+            if [[ -n "$defaultno" ]]; then
+                [[ "$val" == "s" || "$val" == "S" || "$val" == "y" || "$val" == "Y" ]]
+            else
+                [[ -z "$val" || "$val" == "s" || "$val" == "S" || "$val" == "y" || "$val" == "Y" ]]
+            fi
             return $?
             ;;
     esac
@@ -121,7 +185,9 @@ _checklist() {
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --checklist "$question" 20 60 10 "$@" 3>&1 1>&2 2>&3
+            "$tui" --title "$title" --backtitle "Spellbook-OS" \
+                --cancel-button "Voltar" \
+                --checklist "$question" 20 65 10 "$@" 3>&1 1>&2 2>&3 || return 1
             ;;
         plain)
             echo "  $question" >&2
@@ -129,11 +195,23 @@ _checklist() {
             while [[ $# -ge 3 ]]; do
                 local tag="$1" desc="$2" state="$3"
                 shift 3
-                printf "  [%d] %s - %s (padrão: %s): " "$i" "$tag" "$desc" "$state" >&2
+                local default_hint
+                if [[ "$state" == "on" ]]; then
+                    default_hint="S/n"
+                else
+                    default_hint="s/N"
+                fi
+                printf "  [%d] %s - %s (%s): " "$i" "$tag" "$desc" "$default_hint" >&2
                 local val
                 read -r val
-                if [[ "${val:-$state}" == "on" || "${val:-$state}" == "ON" || "${val:-$state}" == "s" ]]; then
-                    result="$result \"$tag\""
+                if [[ "$state" == "on" ]]; then
+                    if [[ -z "$val" || "$val" == "s" || "$val" == "S" || "$val" == "y" || "$val" == "Y" ]]; then
+                        result="$result \"$tag\""
+                    fi
+                else
+                    if [[ "$val" == "s" || "$val" == "S" || "$val" == "y" || "$val" == "Y" ]]; then
+                        result="$result \"$tag\""
+                    fi
                 fi
                 ((i++))
             done
@@ -149,7 +227,7 @@ _msgbox() {
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --msgbox "$msg" 20 70
+            "$tui" --title "$title" --backtitle "Spellbook-OS" --msgbox "$msg" 20 70
             ;;
         plain)
             echo ""
@@ -160,12 +238,26 @@ _msgbox() {
     esac
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 1: Dependências do sistema
-# ---------------------------------------------------------------------------
+_tui_sim_nao() {
+    local title="$1" question="$2" tui result
+    tui=$(_tui)
+    case "$tui" in
+        whiptail|dialog)
+            result=$("$tui" --title "$title" --backtitle "Spellbook-OS" \
+                --cancel-button "Voltar" --notags \
+                --menu "$question" 12 65 2 \
+                "sim" "Sim" "nao" "Não" 3>&1 1>&2 2>&3) || return 2
+            [[ "$result" == "sim" ]] && return 0 || return 1 ;;
+        plain)
+            printf "  %s (S/n/v=voltar): " "$question" >&2
+            local val; read -r val
+            case "$val" in v|V) return 2 ;; n|N) return 1 ;; *) return 0 ;; esac ;;
+    esac
+}
 
+# --- Etapa 1: Dependências do sistema ---
 _step_deps() {
-    _info "Verificando dependências do sistema..."
+    _step "Verificando dependências"
 
     local pkgs=(zsh fzf git python3-pip rsync tree jq pv)
 
@@ -181,20 +273,21 @@ _step_deps() {
 
     if command -v pip3 &>/dev/null; then
         _info "Instalando dependências Python..."
+        local pip_flags="--quiet"
+        [[ -z "${VIRTUAL_ENV:-}" ]] && pip_flags="--user $pip_flags"
         if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
-            _run pip3 install --user -r "$SCRIPT_DIR/requirements.txt" --quiet
+            _run pip3 install $pip_flags -r "$SCRIPT_DIR/requirements.txt"
         else
-            _run pip3 install --user pandas openpyxl --quiet
+            _run pip3 install $pip_flags pandas openpyxl
         fi
         _ok "Python deps instaladas"
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 2: Oh My Zsh + plugins
-# ---------------------------------------------------------------------------
-
+# --- Etapa 2: Oh My Zsh + plugins ---
 _step_omz() {
+    _step "Oh My Zsh + plugins"
+
     local omz_dir="$ZDOTDIR_TARGET/.oh-my-zsh"
 
     if [[ -d "$omz_dir" ]]; then
@@ -228,16 +321,86 @@ _step_omz() {
         "https://github.com/zsh-users/zsh-history-substring-search"
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 3: TUI — coletar configuração do usuário
-# ---------------------------------------------------------------------------
+# --- Helpers de detecção ---
+_detect_git_identity() {
+    _DETECTED_GIT_NAME="$(git config --global user.name 2>/dev/null || true)"
+    _DETECTED_GIT_EMAIL="$(git config --global user.email 2>/dev/null || true)"
+}
 
+_parse_config_value() {
+    local key="$1" file="$2"
+    sed -n "s/^export ${key}=\"\(.*\)\"/\1/p" "$file" 2>/dev/null | head -1
+}
+
+_detect_existing_config() {
+    local config_file="$ZDOTDIR_TARGET/config.local.zsh"
+    _EXISTING_CONFIG=false
+    [[ -f "$config_file" ]] || return 1
+
+    local name_val email_val
+    name_val=$(_parse_config_value "ZSH_GIT_NAME_PESSOAL" "$config_file")
+    email_val=$(_parse_config_value "ZSH_GIT_EMAIL_PESSOAL" "$config_file")
+
+    if [[ -n "$name_val" && "$name_val" != "SeuNome" \
+       && -n "$email_val" && "$email_val" != "voce@email.com" ]]; then
+        _EXISTING_CONFIG=true
+        _EXISTING_GIT_NAME="$name_val"
+        _EXISTING_GIT_EMAIL="$email_val"
+        _EXISTING_GIT_NAME_MEC=$(_parse_config_value "ZSH_GIT_NAME_MEC" "$config_file")
+        _EXISTING_GIT_EMAIL_MEC=$(_parse_config_value "ZSH_GIT_EMAIL_MEC" "$config_file")
+        _EXISTING_DEV_DIR=$(_parse_config_value "DEV_DIR" "$config_file")
+        _EXISTING_MEC_ROOT=$(_parse_config_value "MEC_ROOT" "$config_file")
+        _EXISTING_REMOTE_HOST=$(_parse_config_value "ZSH_REMOTE_HOST" "$config_file")
+        _EXISTING_REMOTE_USER=$(_parse_config_value "ZSH_REMOTE_USER" "$config_file")
+        return 0
+    fi
+    return 1
+}
+
+# --- Etapa 3: TUI — coletar configuração do usuário ---
 _step_tui() {
-    local tui
-    tui=$(_tui)
-
-    # Boas-vindas
-    _msgbox "Instalador zsh-config" \
+    _step "Configuração interativa"
+    if [[ "$DRY_RUN" == true ]]; then
+        _TUI_GIT_NAME="SeuNome"
+        _TUI_GIT_EMAIL="voce@email.com"
+        _TUI_GIT_NAME_MEC=""
+        _TUI_GIT_EMAIL_MEC=""
+        _TUI_DEV_DIR="\${HOME}/Desenvolvimento"
+        _TUI_MEC_ROOT="\${HOME}/Desenvolvimento/MEC/pipelines-main"
+        _TUI_REMOTE_HOST=""
+        _TUI_REMOTE_USER=""
+        _TUI_FEATURES='"mec_tools"'
+        _info "Usando valores padrão (dry-run)"
+        return 0
+    fi
+    _detect_git_identity
+    _detect_existing_config || true
+    # Config existente com valores reais → pular TUI
+    if [[ "$_EXISTING_CONFIG" == true ]]; then
+        _TUI_GIT_NAME="$_EXISTING_GIT_NAME"
+        _TUI_GIT_EMAIL="$_EXISTING_GIT_EMAIL"
+        _TUI_GIT_NAME_MEC="${_EXISTING_GIT_NAME_MEC:-}"
+        _TUI_GIT_EMAIL_MEC="${_EXISTING_GIT_EMAIL_MEC:-}"
+        _TUI_DEV_DIR="${_EXISTING_DEV_DIR:-\${HOME}/Desenvolvimento}"
+        _TUI_MEC_ROOT="${_EXISTING_MEC_ROOT:-\${HOME}/Desenvolvimento/MEC/pipelines-main}"
+        _TUI_REMOTE_HOST="${_EXISTING_REMOTE_HOST:-}"
+        _TUI_REMOTE_USER="${_EXISTING_REMOTE_USER:-}"
+        _TUI_FEATURES='"mec_tools"'
+        _ok "Configuração existente detectada — preservando valores"
+        _info "Para reconfigurar, remova config.local.zsh e execute novamente"
+        return 0
+    fi
+    local git_name="" git_email="" git_name_mec="" git_email_mec=""
+    local dev_dir="" mec_root="" remote_host="" remote_user="" features=""
+    local detected_name="${_DETECTED_GIT_NAME:-}" detected_email="${_DETECTED_GIT_EMAIL:-}"
+    local detected_mec_name="${ZSH_GIT_NAME_MEC:-}" detected_mec_email="${ZSH_GIT_EMAIL_MEC:-}" _cf="$ZDOTDIR_TARGET/config.local.zsh"
+    [[ -z "$detected_mec_name" && -f "$_cf" ]] && { detected_mec_name=$(_parse_config_value "ZSH_GIT_NAME_MEC" "$_cf")
+        detected_mec_email=$(_parse_config_value "ZSH_GIT_EMAIL_MEC" "$_cf"); }
+    local tui_step=1 rc=0
+    while [[ $tui_step -le 6 ]]; do
+    case $tui_step in
+    1) # Boas-vindas
+        _msgbox "Instalador Spellbook-OS" \
 "O que será configurado:
 
   - Dependências do sistema (zsh, fzf, git, jq, pv...)
@@ -246,41 +409,76 @@ _step_tui() {
   - Entrada ZDOTDIR no ~/.zshenv
 
 Pressione OK para continuar."
+        tui_step=2 ;;
+    2) # Identidade Git
+        if [[ -n "$detected_name" && -n "$detected_email" ]]; then
+            rc=0; _tui_sim_nao "Identidade Git" \
+                "Identidade detectada:\n\n  Nome:  ${detected_name}\n  Email: ${detected_email}\n\nDeseja alterar?" || rc=$?
+            case $rc in
+                2) tui_step=1; continue ;;
+                0) git_name=$(_inputbox "Identidade Git" "Nome (git global):" "$detected_name") \
+                        || { tui_step=1; continue; }
+                    git_email=$(_inputbox "Identidade Git" "Email (git global):" "$detected_email") \
+                        || { tui_step=1; continue; } ;;
+                *) git_name="$detected_name"; git_email="$detected_email" ;;
+            esac
+        else
+            git_name=$(_inputbox "Identidade Git" "Nome (git global):" "") \
+                || { tui_step=1; continue; }
+            git_email=$(_inputbox "Identidade Git" "Email (git global):" "") \
+                || { tui_step=1; continue; }
+        fi
+        tui_step=3 ;;
+    3) # Perfil Profissional
+        if [[ -n "$detected_mec_name" && -n "$detected_mec_email" ]]; then
+            rc=0; _tui_sim_nao "Perfil Profissional" \
+                "Perfil detectado:\n\n  Nome:  ${detected_mec_name}\n  Email: ${detected_mec_email}\n\nDeseja alterar?" || rc=$?
+        else
+            rc=0; _tui_sim_nao "Perfil Profissional" \
+                "Configurar identidade separada para Perfil Profissional?" || rc=$?
+        fi
+        case $rc in
+            2) tui_step=2; continue ;;
+            0) git_name_mec=$(_inputbox "Perfil Profissional" "Nome:" "${detected_mec_name:-}") \
+                    || { tui_step=2; continue; }
+                git_email_mec=$(_inputbox "Perfil Profissional" "Email:" "${detected_mec_email:-}") \
+                    || { tui_step=2; continue; } ;;
+            *) git_name_mec="${detected_mec_name:-}"; git_email_mec="${detected_mec_email:-}" ;;
+        esac
+        tui_step=4 ;;
+    4) # Diretórios
+        dev_dir=$(_inputbox "Diretórios" "Diretório de desenvolvimento:" "${DEV_DIR:-${HOME}/Desenvolvimento}") \
+            || { tui_step=3; continue; }
+        mec_root=$(_inputbox "Diretórios" "Raiz do projeto MEC (pipelines):" "${MEC_ROOT:-${dev_dir}/MEC/pipelines-main}") \
+            || { tui_step=3; continue; }
+        tui_step=5 ;;
+    5) # Sincronização Remota
+        if [[ -n "${ZSH_REMOTE_HOST:-}" && -n "${ZSH_REMOTE_USER:-}" ]]; then
+            rc=0; _tui_sim_nao "Sincronização Remota" \
+                "Sync detectado:\n\n  Host: ${ZSH_REMOTE_HOST}\n  User: ${ZSH_REMOTE_USER}\n\nDeseja alterar?" || rc=$?
+        else
+            rc=0; _tui_sim_nao "Sincronização Remota" \
+                "Configurar sincronização com servidor remoto?" || rc=$?
+        fi
+        case $rc in
+            2) tui_step=4; continue ;;
+            0) remote_host=$(_inputbox "Sincronização Remota" "Host/IP do servidor:" "${ZSH_REMOTE_HOST:-}") \
+                    || { tui_step=4; continue; }
+                remote_user=$(_inputbox "Sincronização Remota" "Usuário SSH:" "${ZSH_REMOTE_USER:-}") \
+                    || { tui_step=4; continue; } ;;
+            *) remote_host="${ZSH_REMOTE_HOST:-}"; remote_user="${ZSH_REMOTE_USER:-}" ;;
+        esac
+        tui_step=6 ;;
+    6) # Features
+        features=$(_checklist "Features" "Selecione as features a ativar:" \
+            "mec_tools" "Ferramentas MEC (dbt, FZF menu)" "on" \
+            "remoto" "Sincronização remota" "off" \
+            "kimi" "Integração Kimi AI" "off") \
+            || { tui_step=5; continue; }
+        tui_step=7 ;;
+    esac
+    done
 
-    # Identidade pessoal
-    local git_name git_email
-    git_name=$(_inputbox "Identidade Git" "Seu nome (git global):" "SeuNome")
-    git_email=$(_inputbox "Identidade Git" "Seu email (git global):" "voce@email.com")
-
-    # Identidade MEC
-    local git_name_mec="" git_email_mec=""
-    if _yesno "Identidade MEC" "Configurar identidade separada para projetos MEC?"; then
-        git_name_mec=$(_inputbox "Identidade MEC" "Nome MEC:" "")
-        git_email_mec=$(_inputbox "Identidade MEC" "Email MEC:" "")
-    fi
-
-    # Diretórios
-    local dev_dir
-    dev_dir=$(_inputbox "Diretórios" "Diretório de desenvolvimento:" "${HOME}/Desenvolvimento")
-
-    local mec_root
-    mec_root=$(_inputbox "Diretórios" "Raiz do projeto MEC (pipelines):" "${dev_dir}/MEC/pipelines-main")
-
-    # Sync remoto
-    local remote_host="" remote_user=""
-    if _yesno "Sync Remoto" "Configurar sincronização com servidor remoto?"; then
-        remote_host=$(_inputbox "Sync Remoto" "Host/IP do servidor:" "")
-        remote_user=$(_inputbox "Sync Remoto" "Usuário SSH:" "")
-    fi
-
-    # Features
-    local features
-    features=$(_checklist "Features" "Selecione as features a ativar:" \
-        "mec_tools" "Ferramentas MEC (dbt, FZF menu)" "on" \
-        "remoto" "Sincronização remota" "off" \
-        "kimi" "Integração Kimi AI" "off")
-
-    # Exportar vars para uso posterior
     _TUI_GIT_NAME="$git_name"
     _TUI_GIT_EMAIL="$git_email"
     _TUI_GIT_NAME_MEC="$git_name_mec"
@@ -292,35 +490,33 @@ Pressione OK para continuar."
     _TUI_FEATURES="$features"
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 4: Gerar config.local.zsh
-# ---------------------------------------------------------------------------
-
+# --- Etapa 4: Gerar config.local.zsh ---
 _step_gen_config() {
+    _step "Gerando config.local.zsh"
     local config_file="$ZDOTDIR_TARGET/config.local.zsh"
+    if [[ -f "$config_file" && ( "$IS_UPDATE" == true || "$_EXISTING_CONFIG" == true ) ]]; then
+        _ok "config.local.zsh já existe — preservado"
+        return 0
+    fi
 
-    if [[ -f "$config_file" && "$IS_UPDATE" == true ]]; then
-        _ok "config.local.zsh já existe — preservado (modo --update)"
+    if [[ "$DRY_RUN" == true ]]; then
+        _info "Geraria config.local.zsh (dry-run)"
         return 0
     fi
 
     _info "Gerando config.local.zsh..."
-
-    # Pre-capturar valores do usuário para interpolação no heredoc
     local _name="${_TUI_GIT_NAME:-SeuNome}"
     local _email="${_TUI_GIT_EMAIL:-voce@email.com}"
     local _name_mec="${_TUI_GIT_NAME_MEC:-}"
     local _email_mec="${_TUI_GIT_EMAIL_MEC:-}"
     local _remote_host="${_TUI_REMOTE_HOST:-}"
     local _remote_user="${_TUI_REMOTE_USER:-}"
-
-    # Normalizar paths: substituir $HOME literal por ${HOME} portável
     local _dev_dir="${_TUI_DEV_DIR:-${HOME}/Desenvolvimento}"
     local _mec_root="${_TUI_MEC_ROOT:-${HOME}/Desenvolvimento/MEC/pipelines-main}"
-    _dev_dir="${_dev_dir//$HOME/\${HOME}}"
-    _mec_root="${_mec_root//$HOME/\${HOME}}"
+    _dev_dir="${_dev_dir//\$\{HOME\}/$HOME}"
+    _mec_root="${_mec_root//\$\{HOME\}/$HOME}"
 
-    _run cat > "$config_file" << EOF
+    cat > "$config_file" << EOF
 # config.local.zsh — Variáveis desta máquina
 # Gerado pelo install.sh. Editável manualmente. Gitignored.
 
@@ -353,14 +549,11 @@ EOF
     _ok "config.local.zsh gerado"
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 5: Copiar templates se não existirem
-# ---------------------------------------------------------------------------
-
+# --- Etapa 5: Copiar templates se não existirem ---
 _step_templates() {
+    _step "Copiando templates"
     local secrets_file="$ZDOTDIR_TARGET/.zsh_secrets"
     local profiles_file="$ZDOTDIR_TARGET/profiles.yml"
-
     if [[ ! -f "$secrets_file" ]]; then
         _run cp "$ZDOTDIR_TARGET/.zsh_secrets.template" "$secrets_file"
         _ok ".zsh_secrets criado a partir do template"
@@ -376,14 +569,11 @@ _step_templates() {
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 6: ~/.zshenv com ZDOTDIR
-# ---------------------------------------------------------------------------
-
+# --- Etapa 6: ~/.zshenv com ZDOTDIR ---
 _step_zshenv() {
+    _step "Configurando ZDOTDIR"
     local zshenv="$HOME/.zshenv"
     local zdotdir_line="export ZDOTDIR=\"$ZDOTDIR_TARGET\""
-
     if grep -qF "ZDOTDIR" "$zshenv" 2>/dev/null; then
         _ok "ZDOTDIR já configurado em ~/.zshenv"
     else
@@ -393,11 +583,13 @@ _step_zshenv() {
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 7: Trocar shell padrão
-# ---------------------------------------------------------------------------
-
+# --- Etapa 7: Trocar shell padrão ---
 _step_chsh() {
+    _step "Shell padrão"
+    if [[ "$DRY_RUN" == true ]]; then
+        _info "Pular troca de shell (dry-run)"
+        return 0
+    fi
     local zsh_path
     zsh_path=$(command -v zsh 2>/dev/null || echo "/bin/zsh")
 
@@ -412,11 +604,54 @@ _step_chsh() {
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 8: Validação pós-instalação
-# ---------------------------------------------------------------------------
+# --- Etapa 8: Fontes base para compatibilidade cross-platform ---
+_step_fonts() {
+    _step "Instalando fontes base"
 
+    local mgr
+    mgr=$(_detect_pkg_manager)
+
+    if [[ "$mgr" != "apt" ]]; then
+        _warn "Instalação de fontes disponível apenas para apt — pule esta etapa"
+        return 0
+    fi
+
+    _run sh -c 'echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections'
+
+    local font_pkgs=(
+        ttf-mscorefonts-installer
+        fonts-liberation2
+        fonts-crosextra-carlito
+        fonts-crosextra-caladea
+        fonts-noto-core
+    )
+
+    for pkg in "${font_pkgs[@]}"; do
+        if dpkg -l "$pkg" &>/dev/null; then
+            _ok "$pkg já instalado"
+        else
+            _info "Instalando $pkg..."
+            _run sudo apt-get install -y "$pkg" || _warn "Falha ao instalar $pkg"
+        fi
+    done
+
+    _info "Atualizando cache de fontes..."
+    _run fc-cache -f
+
+    _ok "Fontes base instaladas (execute 'fontes_instalar' para cobertura completa)"
+}
+
+# --- Etapa 9: Ferramentas de encoding ---
+_step_encoding_tools() {
+    _step "Ferramentas de encoding"
+    _install_pkg "dos2unix" || _warn "Falha ao instalar dos2unix — conversão CRLF usará fallback via sed"
+    _ok "Ferramentas de encoding prontas"
+}
+
+# --- Etapa 10: Validação pós-instalação ---
 _step_validate() {
+    _step "Validação pós-instalação"
+
     local erros=0
     _info "Validando instalação..."
 
@@ -436,35 +671,62 @@ _step_validate() {
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 9: Tela final
-# ---------------------------------------------------------------------------
+# --- Etapa 11: Sugerir captura de manifesto inicial ---
+_step_manifest() {
+    _step "Manifesto do sistema"
 
-_step_summary() {
-    _msgbox "Instalação Concluída" \
-"O que ainda precisa ser preenchido manualmente:
+    if [[ "$DRY_RUN" == true ]]; then
+        _info "Pular captura de manifesto (dry-run)"
+        return 0
+    fi
 
-  [ ] ~/.config/zsh/.zsh_secrets
-      Adicionar: GITHUB_TOKEN, GEMINI_API_KEY
-
-  [ ] ~/.config/zsh/config.local.zsh
-      Preencher: BQ_KEYFILE_PATH (service account BigQuery)
-      Verificar: CONTROLE_BORDO_DIR, BEHOLDER_DIR, ZSH_SSH_KEY_ALT
-
-  [ ] ~/.config/zsh/profiles.yml
-      Verificar configurações do projeto dbt
-
-Para ativar agora:
-  source ~/.config/zsh/.zshrc
-
-Ou reinicie o terminal."
+    if _yesno "Manifesto do Sistema" "Deseja capturar o estado atual do sistema? (recomendado na primeira instalação)"; then
+        _info "O manifesto será capturado ao abrir o terminal com 'sistema_capturar'"
+        _ok "Lembrete adicionado ao resumo final"
+    fi
 }
 
-# ---------------------------------------------------------------------------
-# Etapa 0: Deploy — sincroniza repo para ~/.config/zsh/
-# ---------------------------------------------------------------------------
+# --- Etapa 12: Tela final ---
+_step_summary() {
+    _step "Resumo final"
 
+    local summary_text
+    summary_text='Configuração manual pendente:
+
+  [ ] ~/.config/zsh/.zsh_secrets
+      GITHUB_TOKEN, GEMINI_API_KEY
+
+  [ ] ~/.config/zsh/config.local.zsh
+      BQ_KEYFILE_PATH, CONTROLE_BORDO_DIR, BEHOLDER_DIR
+
+  [ ] ~/.config/zsh/profiles.yml
+      Projeto dbt BigQuery
+
+Comandos disponíveis:
+  fontes_instalar    -- fontes de compatibilidade
+  fontes_verificar   -- cobertura de fontes
+  enc_detectar       -- encoding de arquivos
+  sistema_capturar   -- manifesto JSON do sistema
+  sistema_restaurar  -- restaurar de manifesto
+  diagnostico_pop    -- diagnóstico completo
+
+Para ativar: source ~/.config/zsh/.zshrc
+Ou reinicie o terminal.'
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo ""
+        echo -e "  ${_C_CYAN}=== Instalação Concluída ===${_C_RESET}"
+        echo "$summary_text"
+        return 0
+    fi
+
+    _msgbox "Instalação Concluída" "$summary_text"
+}
+
+# --- Etapa 0: Deploy — sincroniza repo para ~/.config/zsh/ ---
 _step_deploy() {
+    _step "Sincronizando arquivos"
+
     if [[ "$SCRIPT_DIR" == "$ZDOTDIR_TARGET" ]]; then
         _ok "Executando direto de ~/.config/zsh/ — deploy desnecessário"
         return 0
@@ -492,20 +754,31 @@ _step_deploy() {
     _ok "Arquivos sincronizados para $ZDOTDIR_TARGET"
 }
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
+# --- Main ---
 main() {
+    local start_time=$SECONDS
+
     echo ""
-    echo "  zsh-config installer"
-    echo "  ===================="
-    if [[ "$DRY_RUN" == true ]];  then echo "  MODO: dry-run (nenhuma alteração será feita)"; fi
-    if [[ "$IS_UPDATE" == true ]]; then echo "  MODO: update (config.local.zsh preservado)"; fi
-    echo ""
+    echo -e "  ${_C_PURPLE}${_C_BOLD}"
+    echo '    ____              _ _ _                 _'
+    echo '   / ___| _ __   ___| | | |__   ___   ___ | | __'
+    echo '   \___ \|  _ \ / _ \ | | |_ \ / _ \ / _ \| |/ /'
+    echo '    ___) | |_) |  __/ | | |_) | (_) | (_) |   <'
+    echo '   |____/| .__/ \___|_|_|_.__/ \___/ \___/|_|\_\'
+    echo '         |_|                               OS'
+    echo -e "  ${_C_RESET}"
+    echo -e "  ${_C_DIM}  Configuração zsh modular e portável${_C_RESET}"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "  ${_C_YELLOW}  MODO: dry-run (nenhuma alteração será feita)${_C_RESET}"
+    fi
+    if [[ "$IS_UPDATE" == true ]]; then
+        echo -e "  ${_C_CYAN}  MODO: update (config.local.zsh preservado)${_C_RESET}"
+    fi
 
     _step_deploy
     _step_deps
+    _step_fonts
+    _step_encoding_tools
     _step_omz
     _step_tui
     _step_gen_config
@@ -513,7 +786,13 @@ main() {
     _step_zshenv
     _step_chsh
     _step_validate
+    _step_manifest
     _step_summary
+
+    local elapsed=$(( SECONDS - start_time ))
+    echo ""
+    echo -e "  ${_C_GREEN}${_C_BOLD}Spellbook-OS instalado com sucesso.${_C_RESET}"
+    echo -e "  ${_C_DIM}Tempo total: $((elapsed/60))m $((elapsed%60))s${_C_RESET}"
 }
 
 main "$@"

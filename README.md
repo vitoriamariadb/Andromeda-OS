@@ -14,7 +14,7 @@
 
 ---
 
-Configuração zsh modular e portável. 22 módulos de funções, 9 scripts Python, menu FZF interativo para projetos dbt/BigQuery, controle automático de identidade git e integração com Oh My Zsh. Instalável em qualquer máquina Linux com um único comando.
+Configuração zsh modular e portável. 23 módulos de funções, 9 scripts Python, menu FZF interativo para projetos dbt/BigQuery, controle automático de identidade git e integração com Oh My Zsh. Instalável em qualquer máquina Linux com um único comando.
 
 ---
 
@@ -30,8 +30,11 @@ Configuração zsh modular e portável. 22 módulos de funções, 9 scripts Pyth
 | `functions/controle-de-bordo.zsh` | Gestão de projetos e tarefas |
 | `functions/projeto.zsh` | Criação e gestão de projetos |
 | `functions/pulso.zsh` | Monitor de sistema em tempo real |
-| `functions/vault-automation.zsh` | Automação de cofre de notas |
 | `functions/limpeza.zsh` | Limpeza de ambiente e temporários |
+| `functions/encoding.zsh` | Detecção e conversão de encoding (UTF-8, CRLF) |
+| `functions/fontes.zsh` | Instalação e verificação de fontes de compatibilidade |
+| `functions/restaurar.zsh` | Backup e restauração de sistema via manifesto |
+| `functions/sistema.zsh` | Captura de manifesto e diagnóstico do sistema |
 | `functions/_helpers.zsh` | Paleta Dracula + utilitários base |
 | `kimi/` | Integração Kimi AI |
 | `scripts/` | Scripts Python auxiliares (dbt, migração, análise) |
@@ -47,7 +50,7 @@ git clone https://github.com/AndreBFarias/spellbook-OS ~/Desenvolvimento/spellbo
 bash ~/Desenvolvimento/spellbook-OS/install.sh
 ```
 
-O `install.sh` instala as dependências, Oh My Zsh com plugins, sincroniza os arquivos para `~/.config/zsh/` e guia a configuração via TUI interativa.
+O `install.sh` instala dependências, Oh My Zsh com plugins, fontes de compatibilidade, ferramentas de encoding, sincroniza os arquivos para `~/.config/zsh/` e guia a configuração via TUI interativa com navegação Voltar entre etapas e detecção automática de valores existentes.
 
 #### Atualizar (já instalado)
 
@@ -119,7 +122,7 @@ spellbook-OS/
 ├── profiles.yml.template       # Template: dbt BigQuery
 ├── assets/
 │   └── spellbook_os.png
-├── functions/                  # 22 módulos zsh
+├── functions/                  # 23 módulos zsh
 │   ├── _helpers.zsh
 │   ├── mec.zsh
 │   ├── git-contexto.zsh

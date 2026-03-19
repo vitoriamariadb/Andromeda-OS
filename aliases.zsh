@@ -334,3 +334,24 @@ alias dbt_ls='dbt ls --profiles-dir dev'
 # Proposito: Verificar identidade git e status antes de qualquer acao no MEC
 # Uso: mec_check
 alias mec_check='git_info && git status'
+
+# -- Fontes e Encoding -------------------------------------------------------
+
+# Proposito: Instalar todas as fontes de compatibilidade
+# Uso: fontes
+alias fontes='fontes_instalar'
+# Proposito: Verificar cobertura de fontes instaladas
+# Uso: fcheck
+alias fcheck='fontes_verificar'
+# Proposito: Detectar encoding, BOM e line endings de arquivo ou diretorio
+# Uso: enc <arquivo|diretorio>
+alias enc='enc_detectar'
+
+# -- Sistema / Restauracao ----------------------------------------------------
+
+# Proposito: Capturar estado completo do sistema em manifesto JSON
+# Uso: capturar
+alias capturar='sistema_capturar'
+# Proposito: Restaurar sistema a partir de manifesto
+# Uso: restaurar <manifesto.json>
+alias restaurar='sistema_restaurar'

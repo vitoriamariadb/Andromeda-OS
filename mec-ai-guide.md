@@ -1,5 +1,5 @@
 # MEC — Guia de Contexto para IA
-# Projeto: pipelines-main | ENV: dev | STATUS: producao
+# Projeto: pipelines-main | ENV: dev | STATUS: produção
 
 ---
 
@@ -21,26 +21,26 @@ pipelines-main/
 │   │   └── marts/
 │   ├── tests/           # Testes dbt (singular + generic)
 │   ├── macros/          # Macros Jinja2
-│   ├── seeds/           # Dados estaticos CSV
-│   └── target/          # Saida gerada (nao commitar)
-│       └── run_results.json   # Resultado do ultimo dbt run/build/test
+│   ├── seeds/           # Dados estáticos CSV
+│   └── target/          # Saída gerada (não commitar)
+│       └── run_results.json   # Resultado do último dbt run/build/test
 └── scripts/             # Scripts Python auxiliares
 ```
 
 ---
 
-## 2. Regras obrigatorias
+## 2. Regras obrigatórias
 
 ### dbt
 
 - **SEMPRE** usar `.pipelines/bin/dbt`, nunca o `dbt` global do sistema.
-  O dbt global nao tem o adaptador BigQuery — silently quebra sem erro claro.
+  O dbt global não tem o adaptador BigQuery — silently quebra sem erro claro.
 - **SEMPRE** entrar em `queries/` antes de rodar dbt:
   ```bash
   cd queries/ && ../.pipelines/bin/dbt run --profiles-dir ../dev
   ```
-- `--profiles-dir ../dev` e relativo ao CWD (`queries/`), nao ao `--project-dir`.
-- Dataset alvo: **dev** (nunca prod direto sem revisao).
+- `--profiles-dir ../dev` é relativo ao CWD (`queries/`), não ao `--project-dir`.
+- Dataset alvo: **dev** (nunca prod direto sem revisão).
 
 ### git
 
@@ -54,11 +54,11 @@ pipelines-main/
 
 ---
 
-## 3. Comandos rapidos
+## 3. Comandos rápidos
 
-| Alias | Expansao | Descricao |
+| Alias | Expansão | Descrição |
 |-------|----------|-----------|
-| `mec` | `conjurar_mec` | Menu FZF com 29 operacoes |
+| `mec` | `conjurar_mec` | Menu FZF com 29 operações |
 | `conjurar_mec` | — | Abre menu interativo MEC |
 | `santuario MEC pipelines-main` | — | Setup completo do projeto |
 | `git_info` | — | Exibe identidade git local |
@@ -72,7 +72,7 @@ pipelines-main/
 # Rodar todos os modelos
 ../.pipelines/bin/dbt run --profiles-dir ../dev
 
-# Rodar modelos especificos
+# Rodar modelos específicos
 ../.pipelines/bin/dbt run --profiles-dir ../dev --select modelo_a modelo_b
 
 # Build completo (run + test)
@@ -85,7 +85,7 @@ pipelines-main/
 ../.pipelines/bin/dbt ls --profiles-dir ../dev
 ```
 
-### Ver resultados do ultimo run
+### Ver resultados do último run
 
 ```bash
 python3 ~/.config/zsh/scripts/mec-dbt-results.py queries/target/run_results.json
@@ -95,8 +95,8 @@ python3 ~/.config/zsh/scripts/mec-dbt-results.py queries/target/run_results.json
 
 ## 4. Contexto de identidade
 
-A funcao `__aplicar_contexto_git_automatico` em `git-contexto.zsh` detecta o
-diretorio atual e aplica `git config --local` automaticamente:
+A função `__aplicar_contexto_git_automatico` em `git-contexto.zsh` detecta o
+diretório atual e aplica `git config --local` automaticamente:
 
 ```
 /MEC/pipelines-main  →  andrefariasmec / andrefarias@mec.gov.br
@@ -104,17 +104,17 @@ diretorio atual e aplica `git config --local` automaticamente:
 qualquer outro       →  AndreBFarias   / andre.dsbf@gmail.com
 ```
 
-Esse contexto e aplicado em:
+Esse contexto é aplicado em:
 - `santuario MEC pipelines-main`
-- Abertura automatica via hooks do projeto
+- Abertura automática via hooks do projeto
 
 Verificar com: `git config --local user.email`
 
 ---
 
-## 5. Variaveis de ambiente (constantes em mec.zsh)
+## 5. Variáveis de ambiente (constantes em mec.zsh)
 
-| Variavel | Valor |
+| Variável | Valor |
 |----------|-------|
 | `__MEC_ROOT` | `~/Desenvolvimento/MEC/pipelines-main` |
 | `__MEC_DBT_BIN` | `$__MEC_ROOT/.pipelines/bin/dbt` |
@@ -128,20 +128,20 @@ Verificar com: `git config --local user.email`
 
 ## 6. Modelos e schemas
 
-Convencao de pastas em `queries/models/`:
+Convenção de pastas em `queries/models/`:
 
-| Pasta | Materializacao padrao | Descricao |
+| Pasta | Materialização padrão | Descrição |
 |-------|-----------------------|-----------|
 | `staging/` | view | Camada raw: renomeio + cast de tipos |
-| `intermediate/` | view | Logica de negocio intermediaria |
+| `intermediate/` | view | Lógica de negócio intermediária |
 | `marts/` | table | Dados finais para consumo |
-| `seeds/` | — | Tabelas CSV estaticas |
+| `seeds/` | — | Tabelas CSV estáticas |
 
 Prefixo de nome: `br_mec_segape.<modelo>` (dataset no BigQuery).
 
 ---
 
-## 7. Workflow padrao (9 etapas)
+## 7. Workflow padrão (9 etapas)
 
 ```
 1. santuario MEC pipelines-main    # Setup: cd + identidade + venv
@@ -159,59 +159,59 @@ Prefixo de nome: `br_mec_segape.<modelo>` (dataset no BigQuery).
 
 ## 8. Armadilhas conhecidas
 
-### `--profiles-dir` e relativo ao CWD
+### `--profiles-dir` é relativo ao CWD
 Errado: rodar `dbt` da raiz do projeto com `--profiles-dir dev`.
 Certo: entrar em `queries/` e usar `--profiles-dir ../dev`.
 
 ### `run_results.json` em `queries/target/`
-O arquivo fica em `queries/target/run_results.json`, NAO na raiz.
-Script: verificar existencia antes de parsear.
+O arquivo fica em `queries/target/run_results.json`, NÃO na raiz.
+Script: verificar existência antes de parsear.
 
 ### `grep -c` com zero matches
-Em alguns sistemas, `grep -c` retorna exit 1 quando nao ha matches.
-Padrao seguro: `grep -c ... 2>/dev/null || echo "0"`.
+Em alguns sistemas, `grep -c` retorna exit 1 quando não há matches.
+Padrão seguro: `grep -c ... 2>/dev/null || echo "0"`.
 
 ### Branch sem upstream
-`git rev-list --count @{u}..HEAD` falha se branch nao tem upstream configurado.
-Padrao seguro: `git rev-list --count ... 2>/dev/null || echo "0"`.
+`git rev-list --count @{u}..HEAD` falha se branch não tem upstream configurado.
+Padrão seguro: `git rev-list --count ... 2>/dev/null || echo "0"`.
 
-### `dbt ls` requer conexao BigQuery
-Para selecao local de modelos, usar `find queries/models/ -name "*.sql"`.
-`dbt ls` so quando ja estiver online e autenticado.
+### `dbt ls` requer conexão BigQuery
+Para seleção local de modelos, usar `find queries/models/ -name "*.sql"`.
+`dbt ls` só quando já estiver online e autenticado.
 
 ### `__sinc_preservadora` usa `reset --hard`
-A funcao `__sinc_preservadora` em `git-contexto.zsh` faz `reset --hard`.
-NAO reutilizar ela para sincronizacao no MEC. Usar `__mec_git_pull_seguro`.
+A função `__sinc_preservadora` em `git-contexto.zsh` faz `reset --hard`.
+NÃO reutilizar ela para sincronização no MEC. Usar `__mec_git_pull_seguro`.
 
 ### `generate_schema_name` ignora `--target`
 A macro `queries/macros/generate_schema_name.sql` usa `+schema` do `dbt_project.yml`
 quando configurado. Isso SOBRESCREVE o dataset do target.
 
-Exemplo: `--target andre_teste` com `dataset: andre_teste` NAO funciona para
+Exemplo: `--target andre_teste` com `dataset: andre_teste` NÃO funciona para
 `projeto_painel_ministro` porque `dbt_project.yml` define `+schema: projeto_painel_ministro`.
 
-Resultado: todos os runs vao para o dataset `projeto_painel_ministro` no projeto dev,
-independente do `--target`. Nao existe isolamento por target neste projeto.
+Resultado: todos os runs vão para o dataset `projeto_painel_ministro` no projeto dev,
+independente do `--target`. Não existe isolamento por target neste projeto.
 
-### `dbt compile` nao detecta erros de runtime
+### `dbt compile` não detecta erros de runtime
 `dbt compile` valida somente: sintaxe SQL, refs existentes, sources definidos.
-NAO detecta: coluna inexistente, type mismatch, policy tag IAM, erros de JOIN.
+NÃO detecta: coluna inexistente, type mismatch, policy tag IAM, erros de JOIN.
 
-Esses erros so aparecem em `dbt run` no BigQuery. `compile` deu exit 0 com modelos
-que tinham bugs criticos que so quebraram em runtime.
+Esses erros só aparecem em `dbt run` no BigQuery. `compile` deu exit 0 com modelos
+que tinham bugs críticos que só quebraram em runtime.
 
 Fluxo correto: compile → run → verificar `run_results.json`.
 
 ### PR para `main` bloqueado pelo CI
-`.github/workflows/main_protected.yaml` rejeita qualquer PR para `main` que nao venha
+`.github/workflows/main_protected.yaml` rejeita qualquer PR para `main` que não venha
 de `develop`. Feature branches DEVEM apontar PR para `develop`.
 
 Fluxo: `feature/xxx` → PR → `develop` → PR → `main`
 
-### Policy tags IAM em colunas sensiveis
-Colunas como `sexo`, `cor_raca` em tabelas ENEM tem policy tags `media:genero` e `media:etnia`.
-A service account do dev pode nao ter permissao de leitura dessas colunas.
+### Policy tags IAM em colunas sensíveis
+Colunas como `sexo`, `cor_raca` em tabelas ENEM têm policy tags `media:genero` e `media:etnia`.
+A service account do dev pode não ter permissão de leitura dessas colunas.
 `dbt run` falha com: `Access Denied: BigQuery BigQuery: No column-level permission to read column`.
 
 Ao migrar modelos que acessam essas colunas: tratar como issue separada,
-excluir do PR atual e abrir issue especifica.
+excluir do PR atual e abrir issue específica.
