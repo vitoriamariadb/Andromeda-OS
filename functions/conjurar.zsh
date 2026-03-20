@@ -8,7 +8,7 @@ conjurar() {
     local helper_script="${ZDOTDIR:-$HOME/.config/zsh}/scripts/conjurar-helper.py"
     local alias_file="${ZDOTDIR:-$HOME/.config/zsh}/aliases.zsh"
     local func_dir="${ZDOTDIR:-$HOME/.config/zsh}/functions"
-    local claude_file="${ZDOTDIR:-$HOME/.config/zsh}/claude/aliases_claude.zsh"
+    local claude_file="${ZDOTDIR:-$HOME/.config/zsh}/cca/aliases_cca.zsh"
 
     [ -f "$helper_script" ] || { __err "Helper nao encontrado: $helper_script"; return 1; }
     [ -f "$alias_file" ]    || { __err "aliases.zsh nao encontrado."; return 1; }

@@ -135,15 +135,15 @@ santuario() {
 
                     if [ ! -d "$venv_target" ]; then
                         echo -e "  ${D_GREEN}[NOVO]${D_RESET} Criando '$venv_target' ($req_nome)..."
-                        python3 -m venv "$venv_target"
+                        python3 -m venv "$venv_target" || { __warn "Falha ao criar venv '$venv_target'"; continue; }
                         source "$venv_target/bin/activate"
                         pip install -r "$req_nome"
-                        deactivate
+                        typeset -f deactivate > /dev/null 2>&1 && deactivate
                     elif [ "$sync_dependencias" = true ]; then
                         echo -e "  ${D_ORANGE}[SYNC]${D_RESET} Atualizando '$venv_target' ($req_nome)..."
                         source "$venv_target/bin/activate"
                         pip install -r "$req_nome"
-                        deactivate
+                        typeset -f deactivate > /dev/null 2>&1 && deactivate
                     fi
                 done
             fi

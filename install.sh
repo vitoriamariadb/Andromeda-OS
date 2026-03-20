@@ -664,6 +664,9 @@ _step_validate() {
     bash -n "$ZDOTDIR_TARGET/install.sh" 2>/dev/null \
         || { _warn "Sintaxe do install.sh inválida"; ((erros++)); }
 
+    [[ -f "$ZDOTDIR_TARGET/cca/aliases_cca.zsh" ]] \
+        || { _warn "cca/aliases_cca.zsh não encontrado — comando cca indisponível"; ((erros++)); }
+
     if [[ $erros -eq 0 ]]; then
         _ok "Validação pós-instalação: tudo OK"
     else
@@ -709,6 +712,9 @@ Comandos disponíveis:
   sistema_capturar   -- manifesto JSON do sistema
   sistema_restaurar  -- restaurar de manifesto
   diagnostico_pop    -- diagnóstico completo
+  cca                -- claude code (--dangerously-skip-permissions)
+  claude-safe        -- claude code com quota guard
+  claude-quota       -- verificar quota de uso
 
 Para ativar: source ~/.config/zsh/.zshrc
 Ou reinicie o terminal.'

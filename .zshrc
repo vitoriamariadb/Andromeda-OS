@@ -21,8 +21,8 @@ fi
 [ -f "$ZDOTDIR/aliases.zsh" ] && source "$ZDOTDIR/aliases.zsh"
 [ -f "$ZDOTDIR/functions.zsh" ] && source "$ZDOTDIR/functions.zsh"
 
-# --- 4.5. AI TOOLS (CLAUDE) ---
-[ -f "$ZDOTDIR/claude/aliases_claude.zsh" ] && source "$ZDOTDIR/claude/aliases_claude.zsh"
+# --- 4.5. AI TOOLS (CCA) ---
+[ -f "$ZDOTDIR/cca/aliases_cca.zsh" ] && source "$ZDOTDIR/cca/aliases_cca.zsh"
 
 # --- 5. FERRAMENTAS ESPECÍFICAS ---
 # Pyenv
@@ -56,4 +56,4 @@ autoload -U bashcompinit && bashcompinit
 # YOLO mode: executa ferramentas sem confirmacao
 export KIMI_YOLO=1
 
-[ -f "$ZDOTDIR/kimi/aliases_kimi_ultra.zsh" ] && source "$ZDOTDIR/kimi/aliases_kimi_ultra.zsh"
+[ -f "$ZDOTDIR/kca/aliases_kca.zsh" ] && source "$ZDOTDIR/kca/aliases_kca.zsh"
