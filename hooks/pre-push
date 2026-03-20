@@ -1,33 +1,47 @@
 #!/bin/bash
+# Hook pre-push — Ultima porta de defesa contra vazamento de IA
+# CRITICO: git commit --no-verify pula pre-commit e commit-msg, mas NAO pula pre-push
+# Instalado via aplicar_hooks_globais()
+
+source "$HOME/.config/git/hooks/_lib.sh" 2>/dev/null || true
 
 REPO_PATH="$(git rev-parse --show-toplevel)"
+
+# --- Deteccao de contexto ---
+if type _hook_detect_context &>/dev/null; then
+    _hook_detect_context "$REPO_PATH"
+else
+    if [[ "$REPO_PATH" == *"/MEC/"* || "$REPO_PATH" == *"/MEC" ]]; then
+        EXPECTED_NAME="andrefariasmec"
+        EXPECTED_EMAIL="andrefarias@mec.gov.br"
+        EXPECTED_SSH_ALIAS="github.com-mec"
+        CONTEXT="MEC"
+    elif [[ "$REPO_PATH" == *"/VitoriaMariaDB/"* || "$REPO_PATH" == *"/VitoriaMariaDB" ]]; then
+        EXPECTED_NAME="vitoriamariadb"
+        EXPECTED_EMAIL="vitoriamaria.sds@gmail.com"
+        EXPECTED_SSH_ALIAS="github.com-vit"
+        CONTEXT="VitoriaMariaDB"
+    else
+        EXPECTED_NAME="[REDACTED]"
+        EXPECTED_EMAIL="[REDACTED]"
+        EXPECTED_SSH_ALIAS="github.com-personal"
+        CONTEXT="Pessoal"
+    fi
+fi
+
 CURRENT_NAME=$(git config --get user.name)
 CURRENT_EMAIL=$(git config --get user.email)
 
-if [[ "$REPO_PATH" == *"/MEC/"* || "$REPO_PATH" == *"/MEC" ]]; then
-    EXPECTED_NAME="andrefariasmec"
-    EXPECTED_EMAIL="andrefarias@mec.gov.br"
-    EXPECTED_SSH_ALIAS="github.com-mec"
-    CONTEXT="MEC"
-elif [[ "$REPO_PATH" == *"/VitoriaMariaDB/"* || "$REPO_PATH" == *"/VitoriaMariaDB" ]]; then
-    EXPECTED_NAME="vitoriamariadb"
-    EXPECTED_EMAIL="vitoriamaria.sds@gmail.com"
-    EXPECTED_SSH_ALIAS="github.com-vit"
-    CONTEXT="VitoriaMariaDB"
-else
-    EXPECTED_NAME="AndreBFarias"
-    EXPECTED_EMAIL="andre.dsbf@gmail.com"
-    EXPECTED_SSH_ALIAS="github.com-personal"
-    CONTEXT="Pessoal"
-fi
-
+# [1/4] Validacao de identidade
 if [[ "$CURRENT_NAME" != "$EXPECTED_NAME" || "$CURRENT_EMAIL" != "$EXPECTED_EMAIL" ]]; then
     echo "[pre-push] BLOQUEADO: Identidade incorreta para contexto $CONTEXT"
     echo "  Esperado: $EXPECTED_NAME <$EXPECTED_EMAIL>"
     echo "  Atual:    $CURRENT_NAME <$CURRENT_EMAIL>"
+    _hook_log "pre-push" "BLOQUEADO: identidade incorreta" 2>/dev/null
     exit 1
 fi
 
+# [2/4] Validacao de alias SSH
 REMOTE_URL=$(git remote get-url origin 2>/dev/null)
 
 if [[ -n "$REMOTE_URL" && "$REMOTE_URL" != git@${EXPECTED_SSH_ALIAS}:* ]]; then
@@ -36,11 +50,20 @@ if [[ -n "$REMOTE_URL" && "$REMOTE_URL" != git@${EXPECTED_SSH_ALIAS}:* ]]; then
     echo "  Atual:    $REMOTE_URL"
     echo ""
     echo "  Corrija com: santuario <projeto>"
+    _hook_log "pre-push" "BLOQUEADO: alias SSH incorreto" 2>/dev/null
     exit 1
 fi
 
 REMOTE="$1"
 URL="$2"
+REMOTE_URL="${URL:-$REMOTE_URL}"
+
+# Regexes para escaneamento de mensagens
+_AI="${AI_MENTION_RE:-claude|anthropic|openai|chatgpt|copilot|gemini|gpt-[34]|deepseek|cursor|aider|windsurf|codeium|tabnine|noreply@anthropic}"
+_EMOJI="${EMOJI_RE:-[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}]}"
+
+VIOLATIONS=""
+VIOLATION_COUNT=0
 
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
     [[ -z "$LOCAL_SHA" || "$LOCAL_SHA" == "0000000000000000000000000000000000000000" ]] && continue
@@ -51,6 +74,7 @@ while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
         RANGE="$REMOTE_SHA..$LOCAL_SHA"
     fi
 
+    # [3/4] Validacao de author email (existente)
     BAD_COMMITS=$(git log --format="%H %ae" "$RANGE" 2>/dev/null | grep -v "$EXPECTED_EMAIL" || true)
     if [[ -n "$BAD_COMMITS" ]]; then
         echo "[pre-push] BLOQUEADO: Commits com author email incorreto para contexto $CONTEXT"
@@ -62,9 +86,62 @@ while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
         done
         echo ""
         echo "  Corrija com: git rebase -i --root (ou git commit --amend --author=...)"
+        _hook_log "pre-push" "BLOQUEADO: author email incorreto" 2>/dev/null
         exit 1
     fi
+
+    # [4/4] CRITICO: Escanear mensagens de commit por violacoes de anonimato
+    while read -r COMMIT_SHA; do
+        [[ -z "$COMMIT_SHA" ]] && continue
+
+        FULL_MSG=$(git log --format="%B" -1 "$COMMIT_SHA" 2>/dev/null)
+        SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-8)
+        COMMIT_SUBJECT=$(git log --format="%s" -1 "$COMMIT_SHA" 2>/dev/null)
+        ISSUES=""
+
+        if echo "$FULL_MSG" | grep -qiE "$_COAUTHOR" 2>/dev/null; then
+            ISSUES="${ISSUES} co-autoria"
+        fi
+
+        # Mencoes a ferramentas de IA
+        if echo "$FULL_MSG" | grep -qiE "$_AI" 2>/dev/null; then
+            ISSUES="${ISSUES} mencao-IA"
+        fi
+
+        # Emojis
+        if echo "$FULL_MSG" | grep -qP "$_EMOJI" 2>/dev/null; then
+            ISSUES="${ISSUES} emoji"
+        fi
+
+        if [[ -n "$ISSUES" ]]; then
+            VIOLATIONS="${VIOLATIONS}  ${SHORT_SHA} [${ISSUES# }] \"${COMMIT_SUBJECT}\"\n"
+            VIOLATION_COUNT=$((VIOLATION_COUNT + 1))
+        fi
+
+    done < <(git log --format="%H" "$RANGE" 2>/dev/null)
+
 done
 
+# Relatorio e bloqueio
+if [[ $VIOLATION_COUNT -gt 0 ]]; then
+    echo ""
+    echo "[pre-push] BLOQUEADO: $VIOLATION_COUNT commit(s) com violacoes de anonimato"
+    echo ""
+    echo -e "$VIOLATIONS"
+    echo ""
+    echo "  Para corrigir:"
+    echo "    1. git rebase -i <commit_pai>  (editar mensagens com 'reword')"
+    echo "    2. Ou: git filter-repo --message-callback (para multiplos commits)"
+    echo ""
+    echo "  Para emergencias (use com cuidado):"
+    echo "    git push --no-verify  (pula pre-push -- nao recomendado)"
+    echo ""
+    _hook_log "pre-push" "BLOQUEADO: $VIOLATION_COUNT violacao(oes) de anonimato" 2>/dev/null
+    exit 1
+fi
+
 echo "[pre-push] OK: $CURRENT_NAME ($CONTEXT) via $EXPECTED_SSH_ALIAS"
+_hook_log "pre-push" "OK" 2>/dev/null
 exit 0
+
+# "A eterna vigilancia e o preco da liberdade." — Thomas Jefferson

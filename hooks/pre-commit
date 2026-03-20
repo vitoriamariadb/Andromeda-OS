@@ -1,40 +1,48 @@
 #!/bin/bash
 # Hook Universal Pre-Commit - Auto-fix com relatorio
+# Camada 1 de defesa: auto-fix em arquivos staged
 # Instalado via aplicar_hooks_globais()
+
+source "$HOME/.config/git/hooks/_lib.sh" 2>/dev/null || true
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 cd "$REPO_ROOT" || exit 0
 
-# [0] Validacao de identidade por contexto (SEMPRE roda, mesmo com framework pre-commit)
-CURRENT_NAME=$(git config --get user.name)
-CURRENT_EMAIL=$(git config --get user.email)
-
-if [[ "$REPO_ROOT" == *"/MEC/"* || "$REPO_ROOT" == *"/MEC" ]]; then
-    EXPECTED_NAME="andrefariasmec"
-    EXPECTED_EMAIL="andrefarias@mec.gov.br"
-    CONTEXT="MEC"
-elif [[ "$REPO_ROOT" == *"/VitoriaMariaDB/"* || "$REPO_ROOT" == *"/VitoriaMariaDB" ]]; then
-    EXPECTED_NAME="vitoriamariadb"
-    EXPECTED_EMAIL="vitoriamaria.sds@gmail.com"
-    CONTEXT="VitoriaMariaDB"
+# [0] Validacao de identidade por contexto (SEMPRE roda)
+# Graceful degradation: se _lib.sh nao carregou, usar logica inline
+if type _hook_detect_context &>/dev/null; then
+    _hook_detect_context "$REPO_ROOT"
+    _hook_validate_identity || exit 1
 else
-    EXPECTED_NAME="AndreBFarias"
-    EXPECTED_EMAIL="andre.dsbf@gmail.com"
-    CONTEXT="Pessoal"
+    CURRENT_NAME=$(git config --get user.name)
+    CURRENT_EMAIL=$(git config --get user.email)
+
+    if [[ "$REPO_ROOT" == *"/MEC/"* || "$REPO_ROOT" == *"/MEC" ]]; then
+        EXPECTED_NAME="andrefariasmec"
+        EXPECTED_EMAIL="andrefarias@mec.gov.br"
+        CONTEXT="MEC"
+    elif [[ "$REPO_ROOT" == *"/VitoriaMariaDB/"* || "$REPO_ROOT" == *"/VitoriaMariaDB" ]]; then
+        EXPECTED_NAME="vitoriamariadb"
+        EXPECTED_EMAIL="vitoriamaria.sds@gmail.com"
+        CONTEXT="VitoriaMariaDB"
+    else
+        EXPECTED_NAME="[REDACTED]"
+        EXPECTED_EMAIL="[REDACTED]"
+        CONTEXT="Pessoal"
+    fi
+
+    if [[ "$CURRENT_NAME" != "$EXPECTED_NAME" || "$CURRENT_EMAIL" != "$EXPECTED_EMAIL" ]]; then
+        echo "  [BLOQUEIO] Identidade incorreta para contexto $CONTEXT"
+        echo "    Esperado: $EXPECTED_NAME <$EXPECTED_EMAIL>"
+        echo "    Atual:    $CURRENT_NAME <$CURRENT_EMAIL>"
+        echo "    Corrija com: santuario <projeto>"
+        exit 1
+    fi
 fi
 
-if [[ "$CURRENT_NAME" != "$EXPECTED_NAME" || "$CURRENT_EMAIL" != "$EXPECTED_EMAIL" ]]; then
-    echo "  [BLOQUEIO] Identidade incorreta para contexto $CONTEXT"
-    echo "    Esperado: $EXPECTED_NAME <$EXPECTED_EMAIL>"
-    echo "    Atual:    $CURRENT_NAME <$CURRENT_EMAIL>"
-    echo "    Corrija com: santuario <projeto>"
-    exit 1
-fi
-
-# Se projeto usa framework pre-commit, sair apos validacao de identidade
-if [ -f ".pre-commit-config.yaml" ]; then
-    exit 0
-fi
+# Detectar se projeto usa framework pre-commit
+HAS_FRAMEWORK=false
+[ -f ".pre-commit-config.yaml" ] && HAS_FRAMEWORK=true
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
 [ -z "$STAGED" ] && exit 0
@@ -70,71 +78,120 @@ FIXES=0
 BLOCKS=0
 FIX_DETAILS=""
 
-# [1/4] Anti-emoji (auto-fix + re-stage)
-EMOJI_RE='[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}]'
+# === VERIFICACOES DE ANONIMATO (rodam SEMPRE, mesmo com framework) ===
+
+# [1/6] Anti-emoji (auto-fix + re-stage)
+_EMOJI="${EMOJI_RE:-[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}]}"
 EMOJI_COUNT=0
 for file in $FILES; do
-    if [ -f "$file" ] && grep -qP "$EMOJI_RE" "$file" 2>/dev/null; then
-        perl -i -CSD -pe "s/$EMOJI_RE//g" "$file" 2>/dev/null
+    if [ -f "$file" ] && grep -qP "$_EMOJI" "$file" 2>/dev/null; then
+        perl -i -CSD -pe "s/$_EMOJI//g" "$file" 2>/dev/null
         git add "$file" 2>/dev/null
         EMOJI_COUNT=$((EMOJI_COUNT + 1))
     fi
 done
 [ $EMOJI_COUNT -gt 0 ] && { FIXES=$((FIXES + EMOJI_COUNT)); FIX_DETAILS="$FIX_DETAILS emojis($EMOJI_COUNT)"; }
 
-# [2/4] Whitespace: trailing spaces + newline final (auto-fix + re-stage)
-WS_COUNT=0
+COAUTHOR_COUNT=0
 for file in $FILES; do
-    if [ -f "$file" ]; then
-        CHANGED=0
-        if grep -qP '[\t ]+$' "$file" 2>/dev/null; then
-            sed -i 's/[[:space:]]*$//' "$file"
-            CHANGED=1
-        fi
-        if [ -n "$(tail -c 1 "$file" 2>/dev/null)" ]; then
-            echo "" >> "$file"
-            CHANGED=1
-        fi
-        if [ $CHANGED -eq 1 ]; then
-            git add "$file" 2>/dev/null
-            WS_COUNT=$((WS_COUNT + 1))
-        fi
+    if [ -f "$file" ] && grep -qiE "$_COAUTHOR" "$file" 2>/dev/null; then
+        grep -viE "$_COAUTHOR" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+        git add "$file" 2>/dev/null
+        COAUTHOR_COUNT=$((COAUTHOR_COUNT + 1))
+        _hook_log "pre-commit" "auto-fix co-autoria: $file" 2>/dev/null
     fi
 done
-[ $WS_COUNT -gt 0 ] && { FIXES=$((FIXES + WS_COUNT)); FIX_DETAILS="$FIX_DETAILS whitespace($WS_COUNT)"; }
+[ $COAUTHOR_COUNT -gt 0 ] && { FIXES=$((FIXES + COAUTHOR_COUNT)); FIX_DETAILS="$FIX_DETAILS co-author($COAUTHOR_COUNT)"; }
 
-# [3/4] Secrets (BLOQUEIA - nao tem auto-fix seguro)
-SECRET_RE='(sk-[a-zA-Z0-9]{20,}|sk-ant-[a-zA-Z0-9]{20,}|AIza[0-9A-Za-z_-]{35}|ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}|AKIA[0-9A-Z]{16})'
+# [3/6] Mencoes a IA em arquivos staged (auto-fix + re-stage)
+AI_COMMENT_RE='^\s*[#/]+\s*.*(Generated by|Gerado por|Created by|Criado por)\s+(ChatGPT|Claude|GPT|Copilot|DeepSeek|Gemini|Cursor|Windsurf|Codeium|Tabnine)'
+AI_COUNT=0
 for file in $FILES; do
-    case "$file" in
-        .env|.env.*|*.key|*.pem|*.cert|*.crt) continue ;;
-    esac
-    if [ -f "$file" ] && grep -qP "$SECRET_RE" "$file" 2>/dev/null; then
-        echo "  [BLOQUEIO] Secret detectado: $file"
-        BLOCKS=$((BLOCKS + 1))
+    if [ -f "$file" ] && grep -qiE "$AI_COMMENT_RE" "$file" 2>/dev/null; then
+        grep -viE "$AI_COMMENT_RE" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+        git add "$file" 2>/dev/null
+        AI_COUNT=$((AI_COUNT + 1))
+        _hook_log "pre-commit" "auto-fix mencao IA: $file" 2>/dev/null
     fi
 done
+[ $AI_COUNT -gt 0 ] && { FIXES=$((FIXES + AI_COUNT)); FIX_DETAILS="$FIX_DETAILS ia-artifact($AI_COUNT)"; }
 
-# [4/4] Python: syntax check (BLOQUEIA)
-for file in $FILES; do
-    case "$file" in
-        *.py)
-            if [ -f "$file" ] && ! python3 -m py_compile "$file" 2>/dev/null; then
-                echo "  [BLOQUEIO] Sintaxe invalida: $file"
-                BLOCKS=$((BLOCKS + 1))
+# === VERIFICACOES ADICIONAIS (puladas se framework pre-commit existe) ===
+
+if [[ "$HAS_FRAMEWORK" == false ]]; then
+
+    # [4/6] Whitespace: trailing spaces + newline final (auto-fix + re-stage)
+    WS_COUNT=0
+    for file in $FILES; do
+        if [ -f "$file" ]; then
+            CHANGED=0
+            if grep -qP '[\t ]+$' "$file" 2>/dev/null; then
+                sed -i 's/[[:space:]]*$//' "$file"
+                CHANGED=1
             fi
-            ;;
-    esac
-done
+            if [ -n "$(tail -c 1 "$file" 2>/dev/null)" ]; then
+                echo "" >> "$file"
+                CHANGED=1
+            fi
+            if [ $CHANGED -eq 1 ]; then
+                git add "$file" 2>/dev/null
+                WS_COUNT=$((WS_COUNT + 1))
+            fi
+        fi
+    done
+    [ $WS_COUNT -gt 0 ] && { FIXES=$((FIXES + WS_COUNT)); FIX_DETAILS="$FIX_DETAILS whitespace($WS_COUNT)"; }
+
+    # [5/6] Secrets (BLOQUEIA - nao tem auto-fix seguro)
+    _SECRET="${SECRET_RE:-sk-[a-zA-Z0-9]{20,}}"
+    for file in $FILES; do
+        case "$file" in
+            .env|.env.*|*.key|*.pem|*.cert|*.crt) continue ;;
+        esac
+        if [ -f "$file" ] && grep -qP "$_SECRET" "$file" 2>/dev/null; then
+            echo "  [BLOQUEIO] Secret detectado: $file"
+            BLOCKS=$((BLOCKS + 1))
+        fi
+    done
+
+    # [6/6] Python: syntax check (BLOQUEIA)
+    for file in $FILES; do
+        case "$file" in
+            *.py)
+                if [ -f "$file" ] && ! python3 -m py_compile "$file" 2>/dev/null; then
+                    echo "  [BLOQUEIO] Sintaxe invalida: $file"
+                    BLOCKS=$((BLOCKS + 1))
+                fi
+                ;;
+        esac
+    done
+
+fi
+
+# Chamar universal-sanitizer.py como camada adicional (se Python disponivel)
+if command -v python3 &>/dev/null; then
+    SANITIZER="$HOME/.config/zsh/scripts/universal-sanitizer.py"
+    if [ -f "$SANITIZER" ]; then
+        python3 "$SANITIZER" $FILES 2>/dev/null
+        # Re-stage arquivos que o sanitizer pode ter modificado
+        for file in $FILES; do
+            [ -f "$file" ] && git add "$file" 2>/dev/null
+        done
+    fi
+fi
 
 # Relatorio
 if [ $FIXES -gt 0 ]; then
     echo "  [auto-fix]$FIX_DETAILS -> re-staged"
+    _hook_log "pre-commit" "auto-fix:$FIX_DETAILS" 2>/dev/null
 fi
 
 if [ $BLOCKS -gt 0 ]; then
     echo "  [pre-commit] $BLOCKS problemas bloqueantes. Corrija antes de commitar."
+    _hook_log "pre-commit" "BLOQUEADO ($BLOCKS problemas)" 2>/dev/null
     exit 1
 fi
 
+_hook_log "pre-commit" "OK (fixes=$FIXES)" 2>/dev/null
 exit 0
+
+# "Quem vigia os vigilantes?" — Juvenal

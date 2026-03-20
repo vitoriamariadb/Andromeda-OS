@@ -708,26 +708,68 @@ _step_encoding_tools() {
     _ok "Ferramentas de encoding prontas"
 }
 
-# --- Etapa 10: Spicetify (opcional) ---
-_step_spicetify() {
-    _step "Spicetify (customizacao do Spotify)"
+# --- Etapa 10: Hooks git + commit template ---
+_step_hooks() {
+    _step "Configurando hooks git e commit template"
 
-    if [[ "$DRY_RUN" == true ]]; then
-        _info "Pular Spicetify (dry-run)"
-        return 0
+    local hooks_source="$ZDOTDIR_TARGET/hooks"
+    local hooks_dest="$HOME/.config/git/hooks"
+    local template_dest="$HOME/.config/git/commit-template"
+    local log_dir="$HOME/.local/share/spellbook"
+
+    # Criar diretorios
+    _run mkdir -p "$hooks_dest"
+    _run mkdir -p "$log_dir"
+
+    # Copiar hooks + _lib.sh
+    local hook_files=(_lib.sh pre-commit commit-msg pre-push)
+    for hook in "${hook_files[@]}"; do
+        if [[ -f "$hooks_source/$hook" ]]; then
+            _run cp "$hooks_source/$hook" "$hooks_dest/$hook"
+            _run chmod +x "$hooks_dest/$hook"
+            _ok "$hook instalado"
+        else
+            _warn "$hook nao encontrado em $hooks_source"
+        fi
+    done
+
+    # Copiar commit template
+    if [[ -f "$hooks_source/commit-template" ]]; then
+        _run cp "$hooks_source/commit-template" "$template_dest"
+        _ok "commit-template instalado"
     fi
 
-    if ! _yesno "Spicetify" "Instalar/configurar Spicetify para o Spotify?" "defaultno"; then
-        _info "Spicetify pulado"
-        return 0
-    fi
-
-    local setup_script="$ZDOTDIR_TARGET/scripts/spicetify-setup.sh"
-    if [[ -f "$setup_script" ]]; then
-        _run bash "$setup_script"
+    # Configurar commit.template no gitconfig global
+    if ! git config --global commit.template &>/dev/null; then
+        _run git config --global commit.template "$template_dest"
+        _ok "commit.template configurado no gitconfig global"
     else
-        _warn "Script spicetify-setup.sh nao encontrado em $setup_script"
+        local current_template
+        current_template=$(git config --global commit.template)
+        if [[ "$current_template" != "$template_dest" ]]; then
+            _run git config --global commit.template "$template_dest"
+            _ok "commit.template atualizado no gitconfig global"
+        else
+            _ok "commit.template ja configurado"
+        fi
     fi
+
+    # Configurar core.hooksPath global
+    if ! git config --global core.hooksPath &>/dev/null; then
+        _run git config --global core.hooksPath "$hooks_dest"
+        _ok "core.hooksPath configurado globalmente"
+    else
+        local current_hooks_path
+        current_hooks_path=$(git config --global core.hooksPath)
+        if [[ "$current_hooks_path" != "$hooks_dest" ]]; then
+            _run git config --global core.hooksPath "$hooks_dest"
+            _ok "core.hooksPath atualizado"
+        else
+            _ok "core.hooksPath ja configurado"
+        fi
+    fi
+
+    _ok "Hooks git e commit template prontos"
 }
 
 # --- Etapa 11: Validação pós-instalação ---
@@ -763,18 +805,6 @@ _step_validate() {
 
     [[ -f "$ZDOTDIR_TARGET/functions.zsh" ]] \
         || { _warn "functions.zsh não encontrado — loader de funções ausente"; ((erros++)); }
-
-    # Spicetify: validar apenas se binario existe
-    if [[ -x "$HOME/.spicetify/spicetify" ]]; then
-        local spice_ext
-        spice_ext=$("$HOME/.spicetify/spicetify" config extensions 2>/dev/null | head -1)
-        if [[ -z "$spice_ext" || "$spice_ext" == "custom_apps" ]]; then
-            _warn "Spicetify: campo extensions corrompido ou vazio"
-            ((erros++))
-        else
-            _ok "Spicetify: extensions configuradas"
-        fi
-    fi
 
     if [[ $erros -eq 0 ]]; then
         _ok "Validação pós-instalação: tudo OK"
@@ -824,9 +854,6 @@ Comandos disponíveis:
   cca                -- claude code (--dangerously-skip-permissions)
   claude-safe        -- claude code com quota guard
   claude-quota       -- verificar quota de uso
-  spicetify_status   -- versao, tema, extensions
-  spicetify_reparar  -- detectar e corrigir config
-  spicetify_instalar -- setup completo do Spicetify
   spellbook_export   -- criptografar credentials no vault
   spellbook_import   -- restaurar credentials do vault
 
@@ -917,9 +944,9 @@ main() {
     _step_gen_config
     _step_templates
     _step_secrets_vault
+    _step_hooks
     _step_zshenv
     _step_chsh
-    _step_spicetify
     _step_validate
     _step_manifest
     _step_summary

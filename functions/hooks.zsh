@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-# Proposito: Copiar hooks git (pre-commit + pre-push) para todos os repos
+# Proposito: Copiar hooks git (pre-commit + commit-msg + pre-push + _lib.sh) para todos os repos
 # Uso: aplicar_hooks_globais [diretorio_base]
 aplicar_hooks_globais() {
     __verificar_dependencias "git" || return 1
@@ -9,7 +9,7 @@ aplicar_hooks_globais() {
     local hooks_source="$HOME/.config/git/hooks"
 
     if [ ! -d "$hooks_source" ]; then
-        __err "Diretório de hooks nao encontrado em $hooks_source"
+        __err "Diretorio de hooks nao encontrado em $hooks_source"
         return 1
     fi
 
@@ -19,11 +19,11 @@ aplicar_hooks_globais() {
     local total=$(echo "$repos" | wc -l | xargs)
 
     if [ -z "$repos" ]; then
-        __warn "Nenhum repositório encontrado."
+        __warn "Nenhum repositorio encontrado."
         return 0
     fi
 
-    echo -e "  ${D_COMMENT}${total} repositórios encontrados.${D_RESET}"
+    echo -e "  ${D_COMMENT}${total} repositorios encontrados.${D_RESET}"
     echo ""
 
     local count=0
@@ -33,9 +33,16 @@ aplicar_hooks_globais() {
 
         [ ! -d "$repo_path/.git/hooks" ] && mkdir -p "$repo_path/.git/hooks"
 
+        # Copiar biblioteca compartilhada
+        cp "$hooks_source/_lib.sh" "$repo_path/.git/hooks/_lib.sh" 2>/dev/null
+
+        # Copiar hooks
         cp "$hooks_source/pre-commit" "$repo_path/.git/hooks/pre-commit" 2>/dev/null
         cp "$hooks_source/pre-push" "$repo_path/.git/hooks/pre-push" 2>/dev/null
         cp "$hooks_source/commit-msg" "$repo_path/.git/hooks/commit-msg" 2>/dev/null
+
+        # Garantir permissoes de execucao
+        chmod +x "$repo_path/.git/hooks/_lib.sh" 2>/dev/null
         chmod +x "$repo_path/.git/hooks/pre-commit" 2>/dev/null
         chmod +x "$repo_path/.git/hooks/pre-push" 2>/dev/null
         chmod +x "$repo_path/.git/hooks/commit-msg" 2>/dev/null
@@ -44,6 +51,6 @@ aplicar_hooks_globais() {
     done <<< "$repos"
 
     echo ""
-    __ok "Hooks aplicados: pre-commit (sanitizer + identidade) + commit-msg (anonimato) + pre-push (contexto + author)"
+    __ok "Hooks aplicados: _lib.sh + pre-commit (sanitizer + anonimato) + commit-msg (auto-fix) + pre-push (bloqueio final)"
     echo ""
 }

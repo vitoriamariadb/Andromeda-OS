@@ -179,9 +179,14 @@ alias gpf='git push --force-with-lease'
 # Proposito: Commit abrindo editor
 # Uso: gcm
 alias gcm='git commit'
-# Proposito: Commit ignorando pre-commit hooks
+# Proposito: Commit ignorando pre-commit hooks (com aviso de seguranca)
 # Uso: gcnv
-alias gcnv='git commit --no-verify'
+gcnv() {
+    echo "  [!] --no-verify pula pre-commit e commit-msg (hooks de anonimato)"
+    echo "      pre-push ainda vai validar no momento do push."
+    echo ""
+    git commit --no-verify "$@"
+}
 
 # -- Git: Branches -------------------------------------------------------------
 
@@ -278,6 +283,9 @@ alias atualizar_terminal="exec zsh"
 # Proposito: Aplicar hooks git em todos os repos
 # Uso: aplicar_hooks
 alias aplicar_hooks='aplicar_hooks_globais'
+# Proposito: Auditar todos os repos por violacoes de anonimato
+# Uso: auditar_repos [diretorio_base]
+alias auditar='auditar_repos'
 # Proposito: Limpeza interativa do Controle de Bordo
 # Uso: limpar
 alias limpar='limpeza_interativa'

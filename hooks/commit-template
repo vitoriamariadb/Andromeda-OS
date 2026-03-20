@@ -1,0 +1,10 @@
+
+# tipo: descricao imperativa em PT-BR
+#
+# Tipos validos: feat, fix, refactor, docs, test, perf, chore
+#
+# PROIBIDO:
+#   - Emojis
+#   - Mencoes a ferramentas de IA
+#
+# Exemplo: feat: adicionar validacao de CPF no formulario
