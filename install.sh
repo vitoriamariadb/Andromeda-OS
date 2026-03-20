@@ -567,6 +567,14 @@ _step_templates() {
     else
         _ok "profiles.yml já existe — preservado"
     fi
+
+    local config_local="$ZDOTDIR_TARGET/config.local.zsh"
+    if [[ ! -f "$config_local" ]]; then
+        _run cp "$ZDOTDIR_TARGET/config.local.zsh.template" "$config_local"
+        _ok "config.local.zsh criado a partir do template"
+    else
+        _ok "config.local.zsh já existe — preservado"
+    fi
 }
 
 # --- Etapa 6: ~/.zshenv com ZDOTDIR ---
@@ -667,6 +675,21 @@ _step_validate() {
     [[ -f "$ZDOTDIR_TARGET/cca/aliases_cca.zsh" ]] \
         || { _warn "cca/aliases_cca.zsh não encontrado — comando cca indisponível"; ((erros++)); }
 
+    [[ -d "$ZDOTDIR_TARGET/kca" ]] \
+        || { _warn "kca/ não encontrado — comandos kimi indisponíveis"; ((erros++)); }
+
+    [[ -d "$ZDOTDIR_TARGET/functions" ]] \
+        || { _warn "functions/ não encontrado — funções do Spellbook indisponíveis"; ((erros++)); }
+
+    [[ -d "$ZDOTDIR_TARGET/scripts" ]] \
+        || { _warn "scripts/ não encontrado — scripts auxiliares indisponíveis"; ((erros++)); }
+
+    [[ -f "$ZDOTDIR_TARGET/aliases.zsh" ]] \
+        || { _warn "aliases.zsh não encontrado"; ((erros++)); }
+
+    [[ -f "$ZDOTDIR_TARGET/functions.zsh" ]] \
+        || { _warn "functions.zsh não encontrado — loader de funções ausente"; ((erros++)); }
+
     if [[ $erros -eq 0 ]]; then
         _ok "Validação pós-instalação: tudo OK"
     else
@@ -741,6 +764,14 @@ _step_deploy() {
     _info "Sincronizando $SCRIPT_DIR → $ZDOTDIR_TARGET ..."
     _run mkdir -p "$ZDOTDIR_TARGET"
 
+    # Backup antes de sincronizar (proteção contra rsync --delete)
+    if [[ -d "$ZDOTDIR_TARGET" && "$ZDOTDIR_TARGET" != "$SCRIPT_DIR" ]]; then
+        local backup_dir="$HOME/.config/zsh.backup.$(date +%Y%m%d_%H%M%S)"
+        _info "Criando backup em $backup_dir ..."
+        _run cp -a "$ZDOTDIR_TARGET" "$backup_dir"
+        _ok "Backup salvo: $backup_dir"
+    fi
+
     _run rsync -a --delete \
         --exclude='.oh-my-zsh' \
         --exclude='.zsh_history' \
@@ -748,6 +779,11 @@ _step_deploy() {
         --exclude='config.local.zsh' \
         --exclude='profiles.yml' \
         --exclude='segape-andre.json' \
+        --exclude='meua-ambiente.json' \
+        --exclude='novo_login_de_acesso.json' \
+        --exclude='.cca_quota' \
+        --exclude='.cca_guard_config' \
+        --exclude='.claude_quota' \
         --exclude='*.pre-oh-my-zsh' \
         --exclude='.zcompdump*' \
         --exclude='*.zwc' \
