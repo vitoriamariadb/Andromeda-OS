@@ -22,7 +22,7 @@ fi
 [ -f "$ZDOTDIR/functions.zsh" ] && source "$ZDOTDIR/functions.zsh"
 
 # --- 4.5. AI TOOLS (CCA) ---
-[ -f "$ZDOTDIR/cca/aliases_cca.zsh" ] && source "$ZDOTDIR/cca/aliases_cca.zsh"
+[ -f "${ZDOTDIR:-$HOME/.config/zsh}/cca/aliases_cca.zsh" ] && source "${ZDOTDIR:-$HOME/.config/zsh}/cca/aliases_cca.zsh"
 
 # --- 5. FERRAMENTAS ESPECÍFICAS ---
 # Pyenv
