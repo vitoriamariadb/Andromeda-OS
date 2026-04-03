@@ -11,12 +11,6 @@ _ok()   { echo "  OK  $*"; }
 _info() { echo "  >>  $*"; }
 _warn() { echo "  !!  $*" >&2; }
 
-# Repos a ignorar — gerenciados por outros mecanismos
-IGNORAR=(
-    "Andromeda-OS"    # gerenciado como ~/.config/zsh (ZDOTDIR)
-    "[REDACTED]"  # repo de perfil GitHub, sem código
-)
-
 DEV_DIR="${DEV_DIR:-$HOME/Desenvolvimento}"
 
 # --- Pré-verificações ---
@@ -36,11 +30,22 @@ if ! command -v jq &>/dev/null; then
     exit 0
 fi
 
+# Descobrir username autenticado (sem hardcode)
+GH_USER=$(gh api user --jq '.login' 2>/dev/null) || {
+    _warn "Falha ao obter usuário autenticado do GitHub"
+    exit 0
+}
+
+# Repos a ignorar (gerenciados por outros mecanismos)
+# - Andromeda-OS: gerenciado como ~/.config/zsh (ZDOTDIR)
+# - <username>: repo de perfil GitHub (README apenas, sem código)
+IGNORAR=("Andromeda-OS" "$GH_USER")
+
 [[ -d "$DEV_DIR" ]] || mkdir -p "$DEV_DIR"
 
 # --- Listar repos ---
-_info "Listando repos de [REDACTED]..."
-repos_json=$(gh repo list [REDACTED] --json name,sshUrl --limit 100 2>/dev/null) || {
+_info "Listando repos de $GH_USER..."
+repos_json=$(gh repo list "$GH_USER" --json name,sshUrl --limit 100 2>/dev/null) || {
     _warn "Falha ao listar repos — verifique autenticação do gh"
     exit 0
 }
