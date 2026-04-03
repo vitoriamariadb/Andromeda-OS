@@ -25,10 +25,12 @@ fi
 [ -f "${ZDOTDIR:-$HOME/.config/zsh}/cca/aliases_cca.zsh" ] && source "${ZDOTDIR:-$HOME/.config/zsh}/cca/aliases_cca.zsh"
 
 # --- 5. FERRAMENTAS ESPECÍFICAS ---
-# Pyenv
+# Pyenv (carrega apenas se instalado)
 export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+if [[ -d "$PYENV_ROOT/bin" ]]; then
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+fi
 
 # --- 6. BASH COMPLETION ---
 autoload -U bashcompinit && bashcompinit

@@ -11,7 +11,7 @@
 
 ---
 
-Configuração zsh modular e portável para Pop!\_OS 24.04 + COSMIC DE. 23 módulos de funções, 9 scripts Python, menu FZF interativo para projetos dbt/BigQuery, controle automático de identidade git por diretório e integração com Oh My Zsh. Formatou o PC — clone o repo e rode `./install.sh`. O resto é automático.
+Configuração zsh modular e portável para Pop!\_OS 24.04 + COSMIC DE. 27 módulos de funções, 10 scripts bash, 8 scripts Python, menu FZF interativo para projetos dbt/BigQuery, controle automático de identidade git por diretório e integração com Oh My Zsh. Formatou o PC — clone o repo e rode `./install.sh`. O resto é automático.
 
 ---
 
@@ -67,6 +67,12 @@ cd ~/Desenvolvimento/Andromeda-OS && git pull && ./install.sh --update
 
 O modo `--update` preserva `config.local.zsh`, `.zsh_secrets` e `profiles.yml` existentes.
 
+#### Dry run (sem alterar nada)
+
+```bash
+./install.sh --dry-run
+```
+
 ---
 
 ### Requisitos
@@ -100,42 +106,69 @@ sudo apt install gh && gh auth login
 
 ---
 
-### Módulos zsh
+### Módulos zsh (27)
 
 | Módulo | Descrição |
 |--------|-----------|
-| `functions/mec.zsh` | Menu FZF completo para projetos dbt/BigQuery (29 operações) |
-| `functions/git-contexto.zsh` | Identidade git automática por diretório |
-| `functions/conjurar.zsh` | Menu FZF global de ferramentas |
-| `functions/diagnostico.zsh` | Diagnóstico de ambiente e dependências |
-| `functions/andromeda-sync.zsh` | Sincronização bidirecional do Andromeda-OS |
-| `functions/sync.zsh` | Sincronização de repositórios com backup |
-| `functions/controle-de-bordo.zsh` | Gestão de projetos e tarefas |
-| `functions/projeto.zsh` | Criação e gestão de projetos |
-| `functions/pulso.zsh` | Monitor de sistema em tempo real |
-| `functions/limpeza.zsh` | Limpeza de ambiente e temporários |
-| `functions/encoding.zsh` | Detecção e conversão de encoding (UTF-8, CRLF) |
-| `functions/fontes.zsh` | Instalação e verificação de fontes de compatibilidade |
-| `functions/restaurar.zsh` | Backup e restauração de sistema via manifesto |
-| `functions/sistema.zsh` | Captura de manifesto e diagnóstico do sistema |
-| `functions/remoto.zsh` | Conexão e sync com máquina remota |
-| `functions/_helpers.zsh` | Paleta Dracula + utilitários base |
+| `_helpers.zsh` | Paleta Dracula + utilitários base (cores, formatação) |
+| `andromeda-sync.zsh` | Sincronização bidirecional do Andromeda-OS (pull ao abrir, push ao fechar) |
+| `arvore.zsh` | Visualização de árvore de diretórios com filtros |
+| `auditoria.zsh` | Auditoria de repositórios por violações de anonimato |
+| `busca.zsh` | Busca inteligente em arquivos e diretórios |
+| `conjurar.zsh` | Menu FZF global de ferramentas do Andromeda |
+| `controle-de-bordo.zsh` | Gestão de projetos, tarefas e notas |
+| `diagnostico.zsh` | Diagnóstico completo de ambiente e dependências |
+| `encoding.zsh` | Detecção e conversão de encoding (UTF-8, BOM, CRLF) |
+| `extrair.zsh` | Extração inteligente de arquivos compactados |
+| `fontes.zsh` | Instalação e verificação de fontes de compatibilidade |
+| `git-add.zsh` | Git add interativo com preview |
+| `git-contexto.zsh` | Identidade git automática por diretório |
+| `git-recovery.zsh` | Recuperação de commits e branches perdidos |
+| `hooks.zsh` | Aplicação de hooks git em repositórios |
+| `limpeza.zsh` | Limpeza interativa de ambiente e temporários |
+| `mec.zsh` | Menu FZF completo para projetos dbt/BigQuery (29 operações) |
+| `navegacao.zsh` | Navegação inteligente entre diretórios de projetos |
+| `projeto.zsh` | Criação e gestão de projetos |
+| `pulso.zsh` | Monitor de sistema em tempo real (CPU, RAM, GPU) |
+| `remoto.zsh` | Conexão e sync com máquina remota via SSH |
+| `restaurar.zsh` | Backup e restauração de sistema via manifesto JSON |
+| `sistema.zsh` | Captura de manifesto e diagnóstico do sistema |
+| `spicetify.zsh` | Integração com Spicetify (customização do Spotify) |
+| `sync-integrado.zsh` | Sincronização integrada de múltiplos repositórios |
+| `sync.zsh` | Sincronização de repositórios com backup |
+| `vault_automation.zsh` | Automação de export/import do vault GPG |
 
 ---
 
 ### Scripts auxiliares
 
+#### Bash (10)
+
 | Script | Uso |
 |--------|-----|
-| `scripts/instalar-extras.sh` | Instala earlyoom + Gradia (chamado pelo install.sh) |
-| `scripts/clonar-repos.sh` | Clona/atualiza todos os repos pessoais do GitHub |
-| `scripts/configurar-atalhos-cosmic.sh` | Configura atalhos de teclado no COSMIC DE |
-| `scripts/andromeda-secrets.sh` | Exporta/importa credentials para vault GPG criptografado |
-| `scripts/ritual-da-aurora.sh` | Configura GPU Nvidia + serviços ao iniciar |
-| `scripts/mec-dbt-results.py` | Parser de `run_results.json` do dbt |
-| `scripts/mec-migrar-censo.py` | Migração de tabelas INEP no BigQuery |
-| `scripts/universal-sanitizer.py` | Detecta rastros pessoais em arquivos staged |
-| `scripts/analisador-dados.py` | Analisa CSV/Excel e gera relatório de qualidade |
+| `instalar-extras.sh` | Instala fastfetch + earlyoom + Gradia (chamado pelo install.sh) |
+| `clonar-repos.sh` | Clona/atualiza todos os repos pessoais do GitHub |
+| `configurar-atalhos-cosmic.sh` | Configura atalhos de teclado no COSMIC DE |
+| `andromeda-secrets.sh` | Exporta/importa credentials para vault GPG criptografado |
+| `ritual-da-aurora.sh` | Configura GPU Nvidia + serviços ao iniciar |
+| `ritual-da-aurora-user.sh` | Parte de usuário do ritual (nvidia-settings, sem sudo) |
+| `auditoria-repos.sh` | Auditoria em lote de repositórios por violações |
+| `fix_all_remotes.sh` | Corrige remotes SSH de todos os repositórios |
+| `spicetify-setup.sh` | Instalação e configuração do Spicetify |
+| `validate-ai-tools.sh` | Validação de ferramentas de IA instaladas |
+
+#### Python (8)
+
+| Script | Uso |
+|--------|-----|
+| `analisador-dados.py` | Analisa CSV/Excel e gera relatório de qualidade |
+| `compat.py` | Utilitários de compatibilidade cross-platform |
+| `conjurar-helper.py` | Helper para o menu FZF do conjurar |
+| `mec-dbt-results.py` | Parser de `run_results.json` do dbt |
+| `mec-migrar-censo.py` | Migração de tabelas INEP no BigQuery |
+| `processar-planilha.py` | Processamento de planilhas Excel/CSV |
+| `reconstrutor-helper.py` | Helper para reconstrução de estruturas de projeto |
+| `universal-sanitizer.py` | Detecta rastros pessoais em arquivos staged |
 
 ---
 
@@ -179,6 +212,52 @@ Em qualquer reinstalação futura, o install.sh pede a senha GPG e restaura tudo
 
 ---
 
+### Comandos disponíveis
+
+#### Navegação e arquivos
+
+| Comando | Descrição |
+|---------|-----------|
+| `dev` | Ir para `~/Desenvolvimento` |
+| `cfg` | Ir para `~/.config/zsh` |
+| `mec` | Entrar no projeto pipelines-main |
+| `encontre <padrão>` | Buscar arquivo por nome |
+| `procure_por_texto <texto> <pasta>` | Buscar texto dentro de arquivos |
+
+#### Git
+
+| Comando | Descrição |
+|---------|-----------|
+| `gs` | Status resumido |
+| `gl` | Log visual com grafo |
+| `gc <msg>` | Commit com mensagem |
+| `gac <msg>` | Add tudo + commit |
+| `gp` | Push |
+| `gup` | Pull com rebase |
+| `gss` / `gsp` | Stash push / pop |
+
+#### Sistema
+
+| Comando | Descrição |
+|---------|-----------|
+| `atualizar_tudo` | Atualizar apt + flatpak + limpeza |
+| `capturar` | Manifesto JSON do sistema |
+| `restaurar` | Restaurar de manifesto |
+| `diagnostico_pop` | Diagnóstico completo |
+| `pulso` | Monitor em tempo real |
+| `limpar` | Limpeza interativa |
+
+#### Andromeda
+
+| Comando | Descrição |
+|---------|-----------|
+| `andromeda_export` | Criptografar credentials no vault |
+| `andromeda_import` | Restaurar credentials do vault |
+| `andromeda_sync_status` | Estado do sync bidirecional |
+| `andromeda_sync_force` | Forçar direção do sync |
+
+---
+
 ### Estrutura
 
 ```
@@ -189,6 +268,7 @@ Andromeda-OS/
 ├── env.zsh                         # Ambiente + Oh My Zsh + SSH agent
 ├── aliases.zsh                     # Aliases gerais
 ├── functions.zsh                   # Loader de módulos
+├── AI.md                           # Protocolo para agentes de IA
 ├── mec-ai-guide.md                 # Contexto do projeto MEC para sessões de IA
 ├── config.local.zsh.template       # Template: vars por máquina
 ├── .zsh_secrets.template           # Template: tokens e API keys
@@ -199,13 +279,23 @@ Andromeda-OS/
 │   ├── _lib.sh                     # Biblioteca compartilhada dos hooks
 │   ├── pre-commit                  # Valida identidade + bloqueia secrets
 │   ├── commit-msg                  # Valida formato da mensagem
+│   ├── commit-template             # Template para mensagens de commit
 │   └── pre-push                    # Valida remote SSH alias
-├── functions/                      # 16+ módulos zsh
+├── cca/                            # Claude Code Aliases + quota guard
+│   ├── aliases_cca.zsh
+│   ├── cca_guard.sh
+│   └── cca_quota_manager.sh
+├── kca/                            # Kimi CLI Ultra aliases + docs
+│   ├── aliases_kca.zsh
+│   ├── AGENTS.md
+│   └── KIMI_ULTRA.md
+├── functions/                      # 27 módulos zsh
 │   ├── _helpers.zsh
+│   ├── andromeda-sync.zsh
 │   ├── mec.zsh
 │   ├── git-contexto.zsh
 │   └── ...
-└── scripts/                        # Scripts bash + Python
+└── scripts/                        # 10 bash + 8 Python
     ├── instalar-extras.sh
     ├── clonar-repos.sh
     ├── configurar-atalhos-cosmic.sh
