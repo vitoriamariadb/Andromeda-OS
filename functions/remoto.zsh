@@ -42,14 +42,16 @@ __conectar_rsync() {
     return 1
 }
 
-# Proposito: Sincronizar Beholder com a maquina da Maria via rsync
-# Uso: conectar_maria
-conectar_maria() {
-    __conectar_rsync "vitoriamaria" "vitoriamaria.local" "/home/vitoriamaria/Beholder/"
+# Proposito: Sincronizar Beholder com o Nitro5 via rsync
+# Uso: conectar_nitro5
+conectar_nitro5() {
+    __conectar_rsync "andrefarias" "nitro5.local" "/home/andrefarias/Beholder/"
 }
 
-# Proposito: Sincronizar Beholder com o Nitro5 via rsync
-# Uso: conectar_andre
-conectar_andre() {
-    __conectar_rsync "andrefarias" "nitro5.local" "/home/andrefarias/Beholder/"
+# Proposito: Backup local do Beholder para pasta local
+# Uso: conectar_local [destino]
+conectar_local() {
+    local destino="${1:-$HOME/Beholder/}"
+    mkdir -p "$destino"
+    rsync -avzP --exclude='.cache' --exclude='venv' "$HOME/Beholder/" "$destino"
 }
