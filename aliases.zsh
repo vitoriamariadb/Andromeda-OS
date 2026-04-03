@@ -119,9 +119,9 @@ alias processo_especifico='ps aux | grep -v grep | grep'
 # Proposito: Acompanhar logs do sistema em tempo real
 # Uso: logs
 alias logs='journalctl -f'
-# Proposito: Abrir monitor de sistema grafico
+# Proposito: Abrir monitor de sistema grafico (COSMIC, GNOME ou terminal)
 # Uso: tarefas
-alias tarefas='gnome-system-monitor'
+alias tarefas='command -v cosmic-monitor &>/dev/null && cosmic-monitor || command -v gnome-system-monitor &>/dev/null && gnome-system-monitor || htop'
 # Proposito: Monitor de sistema no terminal (htop)
 # Uso: tarefas_terminal
 alias tarefas_terminal='htop'

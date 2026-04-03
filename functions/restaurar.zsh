@@ -150,6 +150,13 @@ __restaurar_capturar_appimages() {
 
 __restaurar_capturar_tema() {
     local gtk_tema icones cursor cursor_tamanho wallpaper
+    local de="${XDG_CURRENT_DESKTOP:-}"
+
+    # COSMIC DE nao usa gsettings — retornar vazio para graceful degradation
+    if [[ "$de" == *"COSMIC"* ]]; then
+        echo "|||24|"
+        return 0
+    fi
 
     if command -v gsettings &>/dev/null; then
         gtk_tema=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")

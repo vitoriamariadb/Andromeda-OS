@@ -52,6 +52,9 @@ vopen() {
     elif flatpak list --app 2>/dev/null | grep -q md.obsidian.Obsidian; then
         flatpak run md.obsidian.Obsidian "$uri" &> /dev/null &
         disown
+    elif command -v cosmic-files &> /dev/null; then
+        cosmic-files "$uri" &> /dev/null &
+        disown
     elif command -v xdg-open &> /dev/null; then
         xdg-open "$uri" &> /dev/null &
         disown
