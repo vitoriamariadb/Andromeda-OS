@@ -6,8 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZDOTDIR_TARGET="${HOME}/.config/zsh"
-REPO_URL_SSH="git@github.com-personal:[REDACTED]/Spellbook-OS.git"
-REPO_URL_HTTPS="https://github.com/[REDACTED]/Spellbook-OS.git"
+REPO_URL_SSH="git@github.com-personal:vitoriamariadb/Andromeda-OS.git"
+REPO_URL_HTTPS="https://github.com/vitoriamariadb/Andromeda-OS.git"
 DRY_RUN=false
 IS_UPDATE=false
 
@@ -129,7 +129,7 @@ _inputbox() {
 
     case "$tui" in
         whiptail|dialog)
-            result=$("$tui" --title "$title" --backtitle "Spellbook-OS" \
+            result=$("$tui" --title "$title" --backtitle "Andromeda-OS" \
                 --cancel-button "Voltar" \
                 --inputbox "$display_label" 12 65 "" 3>&1 1>&2 2>&3) || return 1
             ;;
@@ -159,7 +159,7 @@ _yesno() {
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --backtitle "Spellbook-OS" \
+            "$tui" --title "$title" --backtitle "Andromeda-OS" \
                 $extra_flags --yesno "$question" 10 65 3>&1 1>&2 2>&3
             return $?
             ;;
@@ -187,7 +187,7 @@ _checklist() {
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --backtitle "Spellbook-OS" \
+            "$tui" --title "$title" --backtitle "Andromeda-OS" \
                 --cancel-button "Voltar" \
                 --checklist "$question" 20 65 10 "$@" 3>&1 1>&2 2>&3 || return 1
             ;;
@@ -229,7 +229,7 @@ _msgbox() {
 
     case "$tui" in
         whiptail|dialog)
-            "$tui" --title "$title" --backtitle "Spellbook-OS" --msgbox "$msg" 20 70
+            "$tui" --title "$title" --backtitle "Andromeda-OS" --msgbox "$msg" 20 70
             ;;
         plain)
             echo ""
@@ -245,7 +245,7 @@ _tui_sim_nao() {
     tui=$(_tui)
     case "$tui" in
         whiptail|dialog)
-            result=$("$tui" --title "$title" --backtitle "Spellbook-OS" \
+            result=$("$tui" --title "$title" --backtitle "Andromeda-OS" \
                 --cancel-button "Voltar" --notags \
                 --menu "$question" 12 65 2 \
                 "sim" "Sim" "nao" "Não" 3>&1 1>&2 2>&3) || return 2
@@ -402,7 +402,7 @@ _step_tui() {
     while [[ $tui_step -le 6 ]]; do
     case $tui_step in
     1) # Boas-vindas
-        _msgbox "Instalador Spellbook-OS" \
+        _msgbox "Instalador Andromeda-OS" \
 "O que será configurado:
 
   - Dependências do sistema (zsh, fzf, git, jq, pv...)
@@ -634,7 +634,7 @@ _step_secrets_vault() {
     fi
 
     local result
-    result=$(bash "$SCRIPT_DIR/scripts/spellbook-secrets.sh" import-auto "$passphrase" "$vault_file" 2>/dev/null) || {
+    result=$(bash "$SCRIPT_DIR/scripts/andromeda-secrets.sh" import-auto "$passphrase" "$vault_file" 2>/dev/null) || {
         _warn "Senha incorreta ou vault corrompido — configure manualmente"
         return 0
     }
@@ -732,7 +732,7 @@ _step_hooks() {
     local hooks_source="$ZDOTDIR_TARGET/hooks"
     local hooks_dest="$HOME/.config/git/hooks"
     local template_dest="$HOME/.config/git/commit-template"
-    local log_dir="$HOME/.local/share/spellbook"
+    local log_dir="$HOME/.local/share/andromeda"
 
     # Criar diretorios
     _run mkdir -p "$hooks_dest"
@@ -861,7 +861,7 @@ _step_validate() {
         || { _warn "kca/ não encontrado — comandos kimi indisponíveis"; ((erros++)); }
 
     [[ -d "$ZDOTDIR_TARGET/functions" ]] \
-        || { _warn "functions/ não encontrado — funções do Spellbook indisponíveis"; ((erros++)); }
+        || { _warn "functions/ não encontrado — funções do Andromeda indisponíveis"; ((erros++)); }
 
     [[ -d "$ZDOTDIR_TARGET/scripts" ]] \
         || { _warn "scripts/ não encontrado — scripts auxiliares indisponíveis"; ((erros++)); }
@@ -873,13 +873,13 @@ _step_validate() {
         || { _warn "functions.zsh não encontrado — loader de funções ausente"; ((erros++)); }
 
     [[ -d "$ZDOTDIR_TARGET/.git" ]] \
-        || { _warn "Spellbook-OS não é um repositório git — sync automático indisponível"; ((erros++)); }
+        || { _warn "Andromeda-OS não é um repositório git — sync automático indisponível"; ((erros++)); }
 
     git -C "$ZDOTDIR_TARGET" remote get-url origin &>/dev/null \
         || { _warn "Remote 'origin' não configurado — push/pull indisponíveis"; ((erros++)); }
 
-    [[ -f "$ZDOTDIR_TARGET/functions/spellbook-sync.zsh" ]] \
-        || { _warn "spellbook-sync.zsh não encontrado — sync bidirecional indisponível"; ((erros++)); }
+    [[ -f "$ZDOTDIR_TARGET/functions/andromeda-sync.zsh" ]] \
+        || { _warn "andromeda-sync.zsh não encontrado — sync bidirecional indisponível"; ((erros++)); }
 
     if [[ $erros -eq 0 ]]; then
         _ok "Validação pós-instalação: tudo OK"
@@ -929,10 +929,10 @@ Comandos disponíveis:
   cca                -- claude code (--dangerously-skip-permissions)
   claude-safe        -- claude code com quota guard
   claude-quota       -- verificar quota de uso
-  spellbook_export       -- criptografar credentials no vault
-  spellbook_import       -- restaurar credentials do vault
-  spellbook_sync_status  -- estado do sync bidirecional
-  spellbook_sync_force   -- forcar direcao do sync
+  andromeda_export       -- criptografar credentials no vault
+  andromeda_import       -- restaurar credentials do vault
+  andromeda_sync_status  -- estado do sync bidirecional
+  andromeda_sync_force   -- forcar direcao do sync
 
 Sync automatico:
   Ao abrir terminal: commit local + pull remoto
@@ -951,22 +951,22 @@ Ou reinicie o terminal.'
     _msgbox "Instalação Concluída" "$summary_text"
 }
 
-# --- Etapa 0: Deploy — git clone do Spellbook-OS para ~/.config/zsh/ ---
+# --- Etapa 0: Deploy — git clone do Andromeda-OS para ~/.config/zsh/ ---
 _step_deploy() {
     _step "Sincronizando arquivos"
 
     # Arquivos locais por maquina (gitignored, preservados entre deploys)
     local -a LOCAL_FILES=(config.local.zsh .zsh_secrets profiles.yml segape-andre.json meua-ambiente.json novo_login_de_acesso.json .zsh_history .cca_quota .cca_guard_config .claude_quota)
 
-    # Caso 1: ZDOTDIR ja e um clone valido do Spellbook-OS
+    # Caso 1: ZDOTDIR ja e um clone valido do Andromeda-OS
     if [[ -d "$ZDOTDIR_TARGET/.git" ]]; then
         local current_remote
         current_remote=$(git -C "$ZDOTDIR_TARGET" remote get-url origin 2>/dev/null || echo "")
-        if [[ "$current_remote" == *"Spellbook-OS"* ]]; then
+        if [[ "$current_remote" == *"Andromeda-OS"* ]]; then
             _info "Clone existente detectado — atualizando..."
             _run git -C "$ZDOTDIR_TARGET" pull --ff-only origin main 2>/dev/null || \
                 _warn "Pull falhou — verifique conflitos manualmente"
-            _ok "Spellbook-OS atualizado via git pull"
+            _ok "Andromeda-OS atualizado via git pull"
             _step_deploy_symlink
             return 0
         fi
@@ -997,7 +997,7 @@ _step_deploy() {
         _ok "Backup salvo: $backup_dir"
 
         # Salvar arquivos locais para restaurar apos clone
-        tmp_locals=$(mktemp -d /tmp/spellbook-locals.XXXXXX)
+        tmp_locals=$(mktemp -d /tmp/andromeda-locals.XXXXXX)
         for f in "${LOCAL_FILES[@]}"; do
             [[ -f "$ZDOTDIR_TARGET/$f" ]] && cp "$ZDOTDIR_TARGET/$f" "$tmp_locals/"
         done
@@ -1010,7 +1010,7 @@ _step_deploy() {
         _run rm -rf "$ZDOTDIR_TARGET"
     fi
 
-    _info "Clonando Spellbook-OS..."
+    _info "Clonando Andromeda-OS..."
     if ssh -o ConnectTimeout=3 -T git@github.com-personal 2>&1 | grep -q "successfully\|Hi " && \
        _run git clone "$REPO_URL_SSH" "$ZDOTDIR_TARGET" 2>/dev/null; then
         _ok "Clone via SSH concluido"
@@ -1018,7 +1018,7 @@ _step_deploy() {
         _ok "Clone via HTTPS concluido"
         _warn "Usando HTTPS — configure SSH para push automatico"
     else
-        _err "Falha ao clonar Spellbook-OS. Verifique conectividade."
+        _err "Falha ao clonar Andromeda-OS. Verifique conectividade."
     fi
 
     # Restaurar arquivos locais e oh-my-zsh
@@ -1038,10 +1038,10 @@ _step_deploy() {
     _ok "Deploy concluido via git clone"
 }
 
-# Symlink de conveniencia: ~/Desenvolvimento/Spellbook-OS -> ~/.config/zsh
+# Symlink de conveniencia: ~/Desenvolvimento/Andromeda-OS -> ~/.config/zsh
 _step_deploy_symlink() {
     local dev_dir="${DEV_DIR:-$HOME/Desenvolvimento}"
-    local link_path="$dev_dir/Spellbook-OS"
+    local link_path="$dev_dir/Andromeda-OS"
 
     [[ ! -d "$dev_dir" ]] && return 0
 
@@ -1054,7 +1054,7 @@ _step_deploy_symlink() {
         rm -f "$link_path"
     elif [[ -d "$link_path" ]]; then
         # Diretorio real ainda existe — nao sobrescrever automaticamente
-        _warn "Spellbook-OS/ em $dev_dir ainda e um diretorio (nao symlink)"
+        _warn "Andromeda-OS/ em $dev_dir ainda e um diretorio (nao symlink)"
         _info "Apos verificar, remova-o e crie o symlink: ln -s $ZDOTDIR_TARGET $link_path"
         return 0
     fi
@@ -1069,12 +1069,12 @@ main() {
 
     echo ""
     echo -e "  ${_C_PURPLE}${_C_BOLD}"
-    echo '    ____              _ _ _                 _'
-    echo '   / ___| _ __   ___| | | |__   ___   ___ | | __'
-    echo '   \___ \|  _ \ / _ \ | | |_ \ / _ \ / _ \| |/ /'
-    echo '    ___) | |_) |  __/ | | |_) | (_) | (_) |   <'
-    echo '   |____/| .__/ \___|_|_|_.__/ \___/ \___/|_|\_\'
-    echo '         |_|                               OS'
+    echo '    _              _                               _       '
+    echo '   / \   _ __   __| |_ __ ___  _ __ ___   ___  __| | __ _ '
+    echo '  / _ \ |  _ \ / _` |  __/ _ \|  _ ` _ \ / _ \/ _` |/ _` |'
+    echo ' / ___ \| | | | (_| | | | (_) | | | | | |  __/ (_| | (_| |'
+    echo '/_/   \_\_| |_|\__,_|_|  \___/|_| |_| |_|\___|\__,_|\__,_|'
+    echo '                                                          OS'
     echo -e "  ${_C_RESET}"
     echo -e "  ${_C_DIM}  Configuração zsh modular e portável${_C_RESET}"
     if [[ "$DRY_RUN" == true ]]; then
@@ -1103,7 +1103,7 @@ main() {
 
     local elapsed=$(( SECONDS - start_time ))
     echo ""
-    echo -e "  ${_C_GREEN}${_C_BOLD}Spellbook-OS instalado com sucesso.${_C_RESET}"
+    echo -e "  ${_C_GREEN}${_C_BOLD}Andromeda-OS instalado com sucesso.${_C_RESET}"
     echo -e "  ${_C_DIM}Tempo total: $((elapsed/60))m $((elapsed%60))s${_C_RESET}"
 }
 
