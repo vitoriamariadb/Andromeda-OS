@@ -1,5 +1,5 @@
 #!/bin/bash
-# Instalador e configurador do Spicetify para Spellbook-OS
+# Instalador e configurador do Spicetify para Andromeda-OS
 # Detecta tipo de instalacao do Spotify, instala Spicetify e aplica config padrao
 
 set -euo pipefail
@@ -247,7 +247,7 @@ validar() {
 # --- Main ---
 main() {
     echo ""
-    echo -e "  ${_C_BOLD}Spicetify Setup — Spellbook-OS${_C_RESET}"
+    echo -e "  ${_C_BOLD}Spicetify Setup — Andromeda-OS${_C_RESET}"
     echo -e "  ${_C_DIM}$(printf '%.0s─' {1..40})${_C_RESET}"
 
     local tipo_spotify

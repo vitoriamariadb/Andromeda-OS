@@ -44,7 +44,7 @@ pipelines-main/
 
 ### git
 
-- Identidade local: `user.name = andrefariasmec`, `user.email = andrefarias@mec.gov.br`
+- Identidade local: configurar via `ZSH_IDENTITY_MEC_NAME` e `ZSH_IDENTITY_MEC_EMAIL` no `config.local.zsh`
 - **Nunca** commitar direto em `main`. Branches: `feat/xxx`, `fix/xxx`, `refactor/xxx`.
 - Pull com rebase: `git pull --rebase` (não merge).
 - Nenhum `reset --hard` sem backup ou confirmação explícita.
@@ -99,9 +99,9 @@ A função `__aplicar_contexto_git_automatico` em `git-contexto.zsh` detecta o
 diretório atual e aplica `git config --local` automaticamente:
 
 ```
-/MEC/pipelines-main  →  andrefariasmec / andrefarias@mec.gov.br
+/MEC/pipelines-main  →  ZSH_IDENTITY_MEC_NAME / ZSH_IDENTITY_MEC_EMAIL (config.local.zsh)
 /VitoriaMariaDB/     →  vitoriamariadb / vitoriamaria.sds@gmail.com
-qualquer outro       →  AndreBFarias   / andre.dsbf@gmail.com
+qualquer outro       →  vitoriamariadb / vitoriamaria.sds@gmail.com
 ```
 
 Esse contexto é aplicado em:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Modulo de compatibilidade cross-platform para scripts do Spellbook-OS.
+Modulo de compatibilidade cross-platform para scripts do Andromeda-OS.
 Zero dependencias externas. Funciona em Linux, macOS e Windows.
 """
 
