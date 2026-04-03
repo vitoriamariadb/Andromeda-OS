@@ -4,6 +4,10 @@
 # Identidades lidas de config.local.zsh (variaveis ZSH_IDENTITY_*)
 # Fonte: source "$HOME/.config/git/hooks/_lib.sh" 2>/dev/null || true
 
+# --- Variaveis de identidade da maquina local ---
+# shellcheck source=/dev/null
+source "${ZDOTDIR:-$HOME/.config/zsh}/config.local.zsh" 2>/dev/null || true
+
 # --- Diretorio de logs ---
 HOOK_LOG_DIR="$HOME/.local/share/andromeda"
 HOOK_LOG_FILE="$HOOK_LOG_DIR/hooks.log"
