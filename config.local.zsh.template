@@ -4,34 +4,27 @@
 # === IDENTIDADE GIT ===
 
 # --- Identidade padrão (fallback para repos sem override) ---
-export ZSH_GIT_NAME_PESSOAL="SeuNome"
-export ZSH_GIT_EMAIL_PESSOAL="voce@email.com"
+export ZSH_GIT_NAME_PESSOAL="vitoriamariadb"
+export ZSH_GIT_EMAIL_PESSOAL="vitoriamaria.sds@gmail.com"
 export ZSH_SSH_ALIAS_PESSOAL="github.com-personal"
 
 # --- Identidades por path (tags separadas por espaco) ---
 # Cada tag precisa de 4 variaveis: _PATH, _NAME, _EMAIL, _SSH
-# Exemplo Nitro-5: ZSH_IDENTITY_TAGS="MEC VIT"
-# Exemplo PC Vitoria: ZSH_IDENTITY_TAGS="MEC AND"
 export ZSH_IDENTITY_TAGS=""
 
 # Exemplo: identidade MEC (repos em */MEC/*)
 # export ZSH_IDENTITY_MEC_PATH="MEC"
-# export ZSH_IDENTITY_MEC_NAME="seunome-mec"
-# export ZSH_IDENTITY_MEC_EMAIL="seunome@mec.gov.br"
+# export ZSH_IDENTITY_MEC_NAME="usuario-mec"
+# export ZSH_IDENTITY_MEC_EMAIL="usuario@mec.gov.br"
 # export ZSH_IDENTITY_MEC_SSH="github.com-mec"
-
-# Exemplo: identidade alternativa (repos em */OutraPessoa/*)
-# export ZSH_IDENTITY_ALT_PATH="OutraPessoa"
-# export ZSH_IDENTITY_ALT_NAME="outrapessoa"
-# export ZSH_IDENTITY_ALT_EMAIL="outra@email.com"
-# export ZSH_IDENTITY_ALT_SSH="github.com-alt"
 
 # === CAMINHOS ===
 
 export DEV_DIR="${HOME}/Desenvolvimento"
-export MEC_ROOT="${DEV_DIR}/MEC/pipelines-main"
+export MEC_ROOT="${HOME}/Desenvolvimento/MEC/pipelines-main"
 export CONTROLE_BORDO_DIR="${HOME}/Controle de Bordo"
 export BEHOLDER_DIR="${HOME}/Beholder"
+export ANDROMEDA_DIR="${HOME}/.config/zsh"
 
 # === SSH ===
 
