@@ -68,7 +68,7 @@ _ok()    { echo -e "  ${_C_GREEN}OK${_C_RESET}  $*"; }
 _warn()  { echo -e "  ${_C_YELLOW}!!${_C_RESET} $*" >&2; }
 _err()   { echo -e "  ${_C_RED}ERRO${_C_RESET} $*" >&2; exit 1; }
 
-TOTAL_STEPS=19
+TOTAL_STEPS=20
 CURRENT_STEP=0
 _EXISTING_CONFIG=false
 
@@ -261,7 +261,7 @@ _tui_sim_nao() {
 _step_deps() {
     _step "Verificando dependências"
 
-    local pkgs=(zsh fzf git python3-pip rsync tree jq pv)
+    local pkgs=(zsh fzf git python3-pip rsync tree jq pv fastfetch)
 
     local mgr
     mgr=$(_detect_pkg_manager)
@@ -307,6 +307,108 @@ _step_extras() {
         bash "$script"
     else
         _warn "scripts/instalar-extras.sh não encontrado — pule esta etapa"
+    fi
+}
+
+# --- Etapa: Configuração SSH (chaves + agent + config) ---
+_step_ssh() {
+    _step "Configuração SSH"
+
+    local ssh_dir="$HOME/.ssh"
+    local key_personal="$ssh_dir/id_ed25519_personal"
+    local ssh_config="$ssh_dir/config"
+
+    _run mkdir -p "$ssh_dir"
+    _run chmod 700 "$ssh_dir"
+
+    # Gerar chave pessoal se nao existir
+    if [[ ! -f "$key_personal" ]]; then
+        local git_email="${_TUI_GIT_EMAIL:-${ZSH_GIT_EMAIL_PESSOAL:-voce@email.com}}"
+        _info "Gerando chave SSH pessoal (ed25519)..."
+        if [[ "$DRY_RUN" == true ]]; then
+            _info "Geraria: ssh-keygen -t ed25519 -C '$git_email' -f $key_personal -N '' (dry-run)"
+        else
+            _run ssh-keygen -t ed25519 -C "$git_email" -f "$key_personal" -N ""
+            _ok "Chave gerada: $key_personal"
+            echo ""
+            echo -e "  ${_C_YELLOW}Adicione a chave publica ao GitHub:${_C_RESET}"
+            echo -e "  ${_C_CYAN}https://github.com/settings/ssh/new${_C_RESET}"
+            echo ""
+            cat "${key_personal}.pub"
+            echo ""
+            echo -n "  Pressione Enter apos adicionar ao GitHub..."
+            read -r
+        fi
+    else
+        _ok "Chave SSH pessoal já existe: $key_personal"
+    fi
+
+    # Garantir AddKeysToAgent yes e hosts no ~/.ssh/config
+    if [[ "$DRY_RUN" == false ]]; then
+        local changed=false
+
+        # Adicionar AddKeysToAgent global (no topo do config)
+        if [[ ! -f "$ssh_config" ]] || ! grep -q "AddKeysToAgent" "$ssh_config" 2>/dev/null; then
+            local tmp
+            tmp=$(mktemp)
+            {
+                echo "AddKeysToAgent yes"
+                echo ""
+                [[ -f "$ssh_config" ]] && cat "$ssh_config"
+            } > "$tmp"
+            mv "$tmp" "$ssh_config"
+            chmod 600 "$ssh_config"
+            changed=true
+            _ok "AddKeysToAgent yes adicionado ao ~/.ssh/config"
+        else
+            _ok "AddKeysToAgent já configurado"
+        fi
+
+        # Adicionar host github.com-personal se nao existir
+        if ! grep -q "github.com-personal" "$ssh_config" 2>/dev/null; then
+            cat >> "$ssh_config" << 'SSH'
+
+# --- GitHub Pessoal ---
+Host github.com-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+SSH
+            changed=true
+            _ok "Host github.com-personal adicionado ao ~/.ssh/config"
+        else
+            _ok "Host github.com-personal já configurado"
+        fi
+
+        # Adicionar host github.com-mec se nao existir
+        if ! grep -q "github.com-mec" "$ssh_config" 2>/dev/null; then
+            cat >> "$ssh_config" << 'SSH'
+
+# --- GitHub MEC ---
+Host github.com-mec
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_mec
+    IdentitiesOnly yes
+SSH
+            changed=true
+            _ok "Host github.com-mec adicionado ao ~/.ssh/config"
+        else
+            _ok "Host github.com-mec já configurado"
+        fi
+
+        $changed || _ok "~/.ssh/config sem alterações necessárias"
+    fi
+
+    # Testar conectividade SSH com GitHub
+    if [[ "$DRY_RUN" == false ]]; then
+        if ssh -o ConnectTimeout=5 -T git@github.com-personal 2>&1 | grep -q "successfully\|Hi "; then
+            _ok "SSH autenticado com sucesso no GitHub"
+        else
+            _warn "SSH ao GitHub falhou — verifique se a chave pública está cadastrada"
+            _info "  Chave pública: $(cat "${key_personal}.pub" 2>/dev/null || echo 'não encontrada')"
+        fi
     fi
 }
 
@@ -1167,6 +1269,7 @@ main() {
     _step_deploy
     _step_deps
     _step_extras
+    _step_ssh
     _step_fonts
     _step_encoding_tools
     _step_omz
