@@ -6,7 +6,7 @@
 set -euo pipefail
 
 BASE_DIR="${1:-${DEV_DIR:-$HOME/Desenvolvimento}}"
-LOG_DIR="$HOME/.local/share/spellbook"
+LOG_DIR="$HOME/.local/share/andromeda"
 LOG_FILE="$LOG_DIR/auditoria.log"
 HOOKS_SOURCE="$HOME/.config/git/hooks"
 

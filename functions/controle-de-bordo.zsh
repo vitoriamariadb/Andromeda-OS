@@ -595,12 +595,12 @@ __cdb_log "INFO" "Controle de Bordo functions loaded"
 # AUTOMAÇÃO COMPLETA
 # ============================================
 
-__sync_spellbook() {
-    local spellbook="$HOME/Desenvolvimento/Spellbook-OS"
-    [[ ! -d "$spellbook" ]] && { __warn "Spellbook-OS não encontrado"; return 0; }
+__sync_andromeda() {
+    local andromeda="$HOME/Desenvolvimento/Andromeda-OS"
+    [[ ! -d "$andromeda" ]] && { __warn "Andromeda-OS não encontrado"; return 0; }
 
     local src="$HOME/.config/zsh/functions"
-    local dst="$spellbook/functions"
+    local dst="$andromeda/functions"
 
     for f in controle-de-bordo.zsh sync-integrado.zsh sync.zsh; do
         if [[ -f "$src/$f" ]]; then
@@ -610,18 +610,18 @@ __sync_spellbook() {
 
     [[ -f "$dst/vault-automation.zsh" ]] && rm "$dst/vault-automation.zsh"
 
-    if [[ -d "$spellbook/.git" ]]; then
-        cd "$spellbook"
+    if [[ -d "$andromeda/.git" ]]; then
+        cd "$andromeda"
         if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
             git add -A > /dev/null 2>&1
             git commit -m "chore: sincronização automática controle-de-bordo" > /dev/null 2>&1
-            __ok "Spellbook-OS sincronizado e commitado"
+            __ok "Andromeda-OS sincronizado e commitado"
         else
-            __ok "Spellbook-OS sem alterações"
+            __ok "Andromeda-OS sem alterações"
         fi
         cd - > /dev/null 2>&1
     else
-        __ok "Spellbook-OS sincronizado"
+        __ok "Andromeda-OS sincronizado"
     fi
 }
 
@@ -687,8 +687,8 @@ controle_de_bordo() {
         python3 "$SCRIPTS_DIR/verificar_obsidian.py" --fix
     fi
 
-    echo -e "${D_COMMENT}[10/10] Sincronizando com Spellbook-OS...${D_RESET}"
-    __sync_spellbook
+    echo -e "${D_COMMENT}[10/10] Sincronizando com Andromeda-OS...${D_RESET}"
+    __sync_andromeda
 
     __cdb_header "AUTOMAÇÃO CONCLUÍDA" "$D_GREEN"
 

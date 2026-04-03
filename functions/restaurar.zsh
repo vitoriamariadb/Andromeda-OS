@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 __restaurar_dir_manifesto() {
-    echo "${HOME}/.config/spellbook/manifesto"
+    echo "${HOME}/.config/andromeda/manifesto"
 }
 
 __restaurar_timestamp() {

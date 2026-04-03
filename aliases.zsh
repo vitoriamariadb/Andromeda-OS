@@ -364,18 +364,18 @@ alias capturar='sistema_capturar'
 # Uso: restaurar <manifesto.json>
 alias restaurar='sistema_restaurar'
 
-# -- Spellbook Vault -----------------------------------------------------------
+# -- Andromeda Vault -----------------------------------------------------------
 
 # Proposito: Exportar credentials criptografados para o vault do repo
-# Uso: spellbook_export [senha]
-spellbook_export() {
-    local spellbook_dir="${SPELLBOOK_DIR:-$HOME/Desenvolvimento/Spellbook-OS}"
-    bash "$spellbook_dir/scripts/spellbook-secrets.sh" export "$@"
+# Uso: andromeda_export [senha]
+andromeda_export() {
+    local andromeda_dir="${ANDROMEDA_DIR:-$HOME/.config/zsh}"
+    bash "$andromeda_dir/scripts/andromeda-secrets.sh" export "$@"
 }
 
 # Proposito: Importar credentials do vault criptografado
-# Uso: spellbook_import [senha]
-spellbook_import() {
-    local spellbook_dir="${SPELLBOOK_DIR:-$HOME/Desenvolvimento/Spellbook-OS}"
-    bash "$spellbook_dir/scripts/spellbook-secrets.sh" import "$@"
+# Uso: andromeda_import [senha]
+andromeda_import() {
+    local andromeda_dir="${ANDROMEDA_DIR:-$HOME/.config/zsh}"
+    bash "$andromeda_dir/scripts/andromeda-secrets.sh" import "$@"
 }

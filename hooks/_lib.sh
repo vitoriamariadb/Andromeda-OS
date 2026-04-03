@@ -5,7 +5,7 @@
 # Fonte: source "$HOME/.config/git/hooks/_lib.sh" 2>/dev/null || true
 
 # --- Diretorio de logs ---
-HOOK_LOG_DIR="$HOME/.local/share/spellbook"
+HOOK_LOG_DIR="$HOME/.local/share/andromeda"
 HOOK_LOG_FILE="$HOOK_LOG_DIR/hooks.log"
 
 # --- Regexes centralizados ---

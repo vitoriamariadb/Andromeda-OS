@@ -1,5 +1,5 @@
 #!/bin/bash
-# Gerenciador de secrets criptografados do Spellbook-OS
+# Gerenciador de secrets criptografados do Andromeda-OS
 # Empacota credentials em GPG simétrico para backup seguro no repo
 
 set -euo pipefail

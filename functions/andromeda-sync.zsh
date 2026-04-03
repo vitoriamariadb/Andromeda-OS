@@ -1,20 +1,20 @@
 #!/bin/zsh
-# Spellbook-OS: Sync bidirecional via git
-# ~/.config/zsh/ e um clone do Spellbook-OS com auto-sync ao abrir/fechar terminal
+# Andromeda-OS: Sync bidirecional via git
+# ~/.config/zsh/ e um clone do Andromeda-OS com auto-sync ao abrir/fechar terminal
 
-__spellbook_sync_dir() {
+__andromeda_sync_dir() {
     echo "${ZDOTDIR:-$HOME/.config/zsh}"
 }
 
-__spellbook_is_git_repo() {
-    local dir="$(__spellbook_sync_dir)"
+__andromeda_is_git_repo() {
+    local dir="$(__andromeda_sync_dir)"
     [[ -d "$dir/.git" ]] || return 1
     git -C "$dir" remote get-url origin &>/dev/null || return 1
     return 0
 }
 
-__spellbook_auto_commit() {
-    local dir="$(__spellbook_sync_dir)"
+__andromeda_auto_commit() {
+    local dir="$(__andromeda_sync_dir)"
     local changes
     changes=$(git -C "$dir" status --porcelain 2>/dev/null)
 
@@ -25,8 +25,8 @@ __spellbook_auto_commit() {
     return 0
 }
 
-__spellbook_resolve_conflict() {
-    local dir="$(__spellbook_sync_dir)"
+__andromeda_resolve_conflict() {
+    local dir="$(__andromeda_sync_dir)"
     local conflitos
     conflitos=$(git -C "$dir" diff --name-only --diff-filter=U 2>/dev/null)
 
@@ -84,22 +84,22 @@ __spellbook_resolve_conflict() {
     return 0
 }
 
-spellbook_sync_pull() {
-    __spellbook_is_git_repo || return 0
+andromeda_sync_pull() {
+    __andromeda_is_git_repo || return 0
 
-    local dir="$(__spellbook_sync_dir)"
+    local dir="$(__andromeda_sync_dir)"
     local start_time=$SECONDS
 
     # Commit mudancas locais pendentes
     local had_local=false
-    if __spellbook_auto_commit; then
+    if __andromeda_auto_commit; then
         had_local=true
     fi
 
     # Verificar conectividade (timeout 2s)
     if ! timeout 2 git -C "$dir" ls-remote --exit-code origin HEAD &>/dev/null 2>&1; then
         if [[ "$had_local" == true ]]; then
-            echo -e "  ${D_COMMENT}Spellbook: commit local salvo (sem rede)${D_RESET}"
+            echo -e "  ${D_COMMENT}Andromeda: commit local salvo (sem rede)${D_RESET}"
         fi
         return 0
     fi
@@ -114,54 +114,54 @@ spellbook_sync_pull() {
     ahead=$(git -C "$dir" rev-list --count origin/main..HEAD 2>/dev/null)
 
     if [[ "${behind:-0}" -eq 0 && "${ahead:-0}" -eq 0 ]]; then
-        echo -e "  ${D_GREEN}Spellbook sincronizado${D_RESET}"
+        echo -e "  ${D_GREEN}Andromeda sincronizado${D_RESET}"
         return 0
     fi
 
     if [[ "${behind:-0}" -eq 0 && "${ahead:-0}" -gt 0 ]]; then
-        echo -e "  ${D_GREEN}Spellbook:${D_RESET} ${D_COMMENT}$ahead commit(s) local(is) pendente(s) de push${D_RESET}"
+        echo -e "  ${D_GREEN}Andromeda:${D_RESET} ${D_COMMENT}$ahead commit(s) local(is) pendente(s) de push${D_RESET}"
         return 0
     fi
 
     # Tentar fast-forward
     if git -C "$dir" merge origin/main --ff-only --quiet 2>/dev/null; then
         local elapsed=$(( SECONDS - start_time ))
-        echo -e "  ${D_GREEN}Spellbook atualizado:${D_RESET} ${D_FG}$behind commit(s) (${elapsed}s)${D_RESET}"
+        echo -e "  ${D_GREEN}Andromeda atualizado:${D_RESET} ${D_FG}$behind commit(s) (${elapsed}s)${D_RESET}"
         return 0
     fi
 
     # Fast-forward falhou — tentar merge real
-    echo -e "  ${D_YELLOW}Spellbook: divergencia detectada (local: $ahead, remoto: $behind)${D_RESET}"
+    echo -e "  ${D_YELLOW}Andromeda: divergencia detectada (local: $ahead, remoto: $behind)${D_RESET}"
     if git -C "$dir" merge origin/main --no-edit --quiet 2>/dev/null; then
         local elapsed=$(( SECONDS - start_time ))
-        echo -e "  ${D_GREEN}Spellbook merged:${D_RESET} ${D_FG}$behind commit(s) integrado(s) (${elapsed}s)${D_RESET}"
+        echo -e "  ${D_GREEN}Andromeda merged:${D_RESET} ${D_FG}$behind commit(s) integrado(s) (${elapsed}s)${D_RESET}"
         return 0
     fi
 
     # Merge com conflito
-    __spellbook_resolve_conflict
+    __andromeda_resolve_conflict
 }
 
-spellbook_sync_push() {
-    __spellbook_is_git_repo || return 0
+andromeda_sync_push() {
+    __andromeda_is_git_repo || return 0
 
-    local dir="$(__spellbook_sync_dir)"
+    local dir="$(__andromeda_sync_dir)"
 
-    __spellbook_auto_commit
+    __andromeda_auto_commit
 
     # Push em background (nunca bloqueia fechamento do terminal)
     git -C "$dir" push origin main --quiet 2>/dev/null &
 }
 
-spellbook_sync_status() {
-    __spellbook_is_git_repo || {
+andromeda_sync_status() {
+    __andromeda_is_git_repo || {
         __err "ZDOTDIR nao e um repositorio git com remote configurado"
         return 1
     }
 
-    local dir="$(__spellbook_sync_dir)"
+    local dir="$(__andromeda_sync_dir)"
 
-    __header "SPELLBOOK SYNC" "$D_PURPLE"
+    __header "ANDROMEDA SYNC" "$D_PURPLE"
 
     local branch
     branch=$(git -C "$dir" branch --show-current 2>/dev/null)
@@ -198,19 +198,19 @@ spellbook_sync_status() {
     echo ""
 }
 
-spellbook_sync_force() {
-    __spellbook_is_git_repo || {
+andromeda_sync_force() {
+    __andromeda_is_git_repo || {
         __err "ZDOTDIR nao e um repositorio git com remote configurado"
         return 1
     }
 
-    local dir="$(__spellbook_sync_dir)"
+    local dir="$(__andromeda_sync_dir)"
     local modo="$1"
 
     case "$modo" in
         --local)
             echo -e "  ${D_YELLOW}Forcando versao local para o remote...${D_RESET}"
-            __spellbook_auto_commit
+            __andromeda_auto_commit
             git -C "$dir" push origin main --force-with-lease
             __ok "Push forcado concluido"
             ;;
@@ -221,7 +221,7 @@ spellbook_sync_force() {
             __ok "Reset para versao remota concluido"
             ;;
         *)
-            echo -e "  ${D_FG}Uso: spellbook_sync_force [--local|--remote]${D_RESET}"
+            echo -e "  ${D_FG}Uso: andromeda_sync_force [--local|--remote]${D_RESET}"
             echo ""
             echo -e "  ${D_COMMENT}--local   Forca push (sobrescreve remote com local)${D_RESET}"
             echo -e "  ${D_COMMENT}--remote  Forca pull (sobrescreve local com remote)${D_RESET}"

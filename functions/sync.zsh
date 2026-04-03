@@ -41,7 +41,7 @@ sincronizar_controle_de_bordo() {
     )
 
     # Repos para ignorar
-    local -a REPO_SKIP=(Spellbook-OS)
+    local -a REPO_SKIP=(Andromeda-OS)
 
     # Variaveis de tamanho (inicializadas antes do bloco condicional)
     local vault_size=0 vault_size_mb=0 limit_mb=1024 warning_threshold=800
