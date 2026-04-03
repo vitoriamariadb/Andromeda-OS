@@ -4,11 +4,11 @@
 [![Licença](https://img.shields.io/badge/licença-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Zsh](https://img.shields.io/badge/shell-zsh-green.svg)](https://www.zsh.org/)
 [![Oh My Zsh](https://img.shields.io/badge/Oh%20My%20Zsh-compatible-blue.svg)](https://ohmyz.sh/)
-[![Estrelas](https://img.shields.io/github/stars/AndreBFarias/spellbook-OS.svg?style=social)](https://github.com/AndreBFarias/spellbook-OS/stargazers)
+[![Estrelas](https://img.shields.io/github/stars/vitoriamariadb/Andromeda-OS.svg?style=social)](https://github.com/vitoriamariadb/Andromeda-OS/stargazers)
 
-<img src="assets/spellbook_os.png" width="120" alt="Spellbook OS">
+<img src="assets/spellbook_os.png" width="120" alt="Andromeda OS">
 
-<h1>Spellbook OS</h1>
+<h1>Andromeda OS</h1>
 
 </div>
 
@@ -46,8 +46,8 @@ Configuração zsh modular e portável. 23 módulos de funções, 9 scripts Pyth
 #### Bootstrap completo (nova máquina)
 
 ```bash
-git clone https://github.com/AndreBFarias/spellbook-OS ~/Desenvolvimento/spellbook-OS
-bash ~/Desenvolvimento/spellbook-OS/install.sh
+git clone https://github.com/vitoriamariadb/Andromeda-OS ~/Desenvolvimento/Andromeda-OS
+bash ~/Desenvolvimento/Andromeda-OS/install.sh
 ```
 
 O `install.sh` instala dependências, Oh My Zsh com plugins, fontes de compatibilidade, ferramentas de encoding, sincroniza os arquivos para `~/.config/zsh/` e guia a configuração via TUI interativa com navegação Voltar entre etapas e detecção automática de valores existentes.
@@ -55,7 +55,7 @@ O `install.sh` instala dependências, Oh My Zsh com plugins, fontes de compatibi
 #### Atualizar (já instalado)
 
 ```bash
-cd ~/Desenvolvimento/spellbook-OS && git pull && ./install.sh --update
+cd ~/Desenvolvimento/Andromeda-OS && git pull && ./install.sh --update
 ```
 
 O modo `--update` preserva `config.local.zsh` e `.zsh_secrets` existentes.
@@ -110,7 +110,7 @@ Os templates estão em `*.template` para referência.
 ### Estrutura
 
 ```
-spellbook-OS/
+Andromeda-OS/
 ├── install.sh                  # Instalador com TUI whiptail
 ├── requirements.txt            # Dependências Python
 ├── .zshrc                      # Entry point do zsh
