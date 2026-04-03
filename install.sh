@@ -261,7 +261,7 @@ _tui_sim_nao() {
 _step_deps() {
     _step "Verificando dependências"
 
-    local pkgs=(zsh fzf git python3-pip rsync tree jq pv fastfetch)
+    local pkgs=(zsh fzf git python3-pip rsync tree jq pv)
 
     local mgr
     mgr=$(_detect_pkg_manager)

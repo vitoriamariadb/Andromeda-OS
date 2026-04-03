@@ -9,6 +9,31 @@ _ok()   { echo "  OK  $*"; }
 _info() { echo "  >>  $*"; }
 _warn() { echo "  !!  $*" >&2; }
 
+# --- fastfetch: informações do sistema na inicialização do terminal ---
+# Não está no apt do Ubuntu 24.04 — instalar via .deb do GitHub Releases
+if command -v fastfetch &>/dev/null; then
+    _ok "fastfetch já instalado ($(fastfetch --version 2>/dev/null | head -1))"
+else
+    _info "Instalando fastfetch via GitHub Releases..."
+    local deb_url
+    deb_url=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest \
+        | python3 -c "import json,sys; r=json.load(sys.stdin); print([a['browser_download_url'] for a in r['assets'] if 'amd64.deb' in a['name']][0])" 2>/dev/null) || true
+
+    if [[ -n "$deb_url" ]]; then
+        local tmp_deb
+        tmp_deb=$(mktemp /tmp/fastfetch-XXXXXX.deb)
+        if curl -sL "$deb_url" -o "$tmp_deb" && sudo apt-get install -y "$tmp_deb"; then
+            rm -f "$tmp_deb"
+            _ok "fastfetch instalado"
+        else
+            rm -f "$tmp_deb"
+            _warn "Falha ao instalar fastfetch — o terminal abrirá sem o banner de sistema"
+        fi
+    else
+        _warn "Não foi possível obter URL do fastfetch — verifique conectividade"
+    fi
+fi
+
 # --- earlyoom: protetor de memória (OOM killer inteligente) ---
 if systemctl is-active --quiet earlyoom 2>/dev/null; then
     _ok "earlyoom já ativo"
