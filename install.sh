@@ -6,8 +6,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZDOTDIR_TARGET="${HOME}/.config/zsh"
-REPO_URL_SSH="git@github.com-personal:vitoriamariadb/Andromeda-OS.git"
-REPO_URL_HTTPS="https://github.com/vitoriamariadb/Andromeda-OS.git"
+REPO_URL_SSH="git@github.com-personal:[REDACTED]/Andromeda-OS.git"
+REPO_URL_HTTPS="https://github.com/[REDACTED]/Andromeda-OS.git"
 DRY_RUN=false
 IS_UPDATE=false
 
@@ -1061,12 +1061,14 @@ _step_deploy_symlink() {
         fi
         rm -f "$link_path"
     elif [[ -d "$link_path" ]]; then
-        # Diretorio real: verificar se e o mesmo clone que ZDOTDIR_TARGET
-        local remote_link remote_zdot
-        remote_link=$(git -C "$link_path" remote get-url origin 2>/dev/null || echo "")
-        remote_zdot=$(git -C "$ZDOTDIR_TARGET" remote get-url origin 2>/dev/null || echo "")
-        if [[ -n "$remote_link" && "$remote_link" == "$remote_zdot" ]]; then
-            _info "Diretório é clone do mesmo repo — convertendo em symlink..."
+        # Diretorio real: comparar slug user/repo (independente de protocolo SSH vs HTTPS)
+        local slug_link slug_zdot
+        slug_link=$(git -C "$link_path" remote get-url origin 2>/dev/null \
+            | sed 's|.*[:/]\([^/]*/[^/]*\)\.git$|\1|' || echo "")
+        slug_zdot=$(git -C "$ZDOTDIR_TARGET" remote get-url origin 2>/dev/null \
+            | sed 's|.*[:/]\([^/]*/[^/]*\)\.git$|\1|' || echo "")
+        if [[ -n "$slug_link" && "$slug_link" == "$slug_zdot" ]]; then
+            _info "Mesmo repositório detectado — convertendo em symlink..."
             _run rm -rf "$link_path"
             _run ln -sfn "$ZDOTDIR_TARGET" "$link_path"
             _ok "Symlink: $link_path -> $ZDOTDIR_TARGET"
