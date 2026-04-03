@@ -77,7 +77,6 @@ if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)" > /dev/null 2>&1
     ssh-add ~/.ssh/id_ed25519_personal 2>/dev/null
     ssh-add ~/.ssh/id_ed25519_mec 2>/dev/null
-    ssh-add ~/.ssh/id_ed25519_vit 2>/dev/null
 fi
 
 # --- 7. GITHUB CLI ---
