@@ -68,7 +68,7 @@ _ok()    { echo -e "  ${_C_GREEN}OK${_C_RESET}  $*"; }
 _warn()  { echo -e "  ${_C_YELLOW}!!${_C_RESET} $*" >&2; }
 _err()   { echo -e "  ${_C_RED}ERRO${_C_RESET} $*" >&2; exit 1; }
 
-TOTAL_STEPS=16
+TOTAL_STEPS=19
 CURRENT_STEP=0
 _EXISTING_CONFIG=false
 
@@ -291,6 +291,66 @@ _step_deps() {
             _run pip3 install $pip_flags pandas openpyxl
         fi
         _ok "Python deps instaladas"
+    fi
+}
+
+# --- Etapa extras: earlyoom + Gradia (COSMIC DE) ---
+_step_extras() {
+    _step "Pacotes extras (earlyoom + Gradia)"
+
+    local script="$ZDOTDIR_TARGET/scripts/instalar-extras.sh"
+    if [[ -f "$script" ]]; then
+        if [[ "$DRY_RUN" == true ]]; then
+            _info "Pular extras (dry-run)"
+            return 0
+        fi
+        bash "$script"
+    else
+        _warn "scripts/instalar-extras.sh não encontrado — pule esta etapa"
+    fi
+}
+
+# --- Etapa extras: atalhos de teclado no COSMIC DE ---
+_step_atalhos() {
+    _step "Atalhos de teclado (COSMIC DE)"
+
+    local script="$ZDOTDIR_TARGET/scripts/configurar-atalhos-cosmic.sh"
+    if [[ -f "$script" ]]; then
+        if [[ "$DRY_RUN" == true ]]; then
+            _info "Pular atalhos (dry-run)"
+            return 0
+        fi
+        bash "$script"
+    else
+        _warn "scripts/configurar-atalhos-cosmic.sh não encontrado"
+    fi
+}
+
+# --- Etapa extras: clonar repos pessoais do GitHub ---
+_step_clonar_repos() {
+    _step "Clonando repos pessoais do GitHub"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        _info "Pular clonagem de repos (dry-run)"
+        return 0
+    fi
+
+    if ! command -v gh &>/dev/null; then
+        _warn "gh CLI não instalado — repos não serão clonados"
+        _info "Instale com: sudo apt install gh && gh auth login"
+        return 0
+    fi
+
+    if ! gh auth status &>/dev/null 2>&1; then
+        _warn "gh CLI não autenticado — execute 'gh auth login' e rode novamente"
+        return 0
+    fi
+
+    local script="$ZDOTDIR_TARGET/scripts/clonar-repos.sh"
+    if [[ -f "$script" ]]; then
+        DEV_DIR="${DEV_DIR:-$HOME/Desenvolvimento}" bash "$script"
+    else
+        _warn "scripts/clonar-repos.sh não encontrado"
     fi
 }
 
@@ -1106,6 +1166,7 @@ main() {
 
     _step_deploy
     _step_deps
+    _step_extras
     _step_fonts
     _step_encoding_tools
     _step_omz
@@ -1115,6 +1176,8 @@ main() {
     _step_secrets_vault
     _step_hooks
     _step_ritual
+    _step_atalhos
+    _step_clonar_repos
     _step_zshenv
     _step_chsh
     _step_validate
