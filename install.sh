@@ -277,7 +277,10 @@ _step_deps() {
         _info "Instalando dependências Python..."
         local pip_flags="--quiet"
         # Pop!_OS 24.04 / Ubuntu 24.04: PEP 668 bloqueia pip global
-        if pip3 install --dry-run pip 2>&1 | grep -q "externally-managed"; then
+        # Capturar separadamente para nao deixar pipefail engolir o resultado do grep
+        local pip_test
+        pip_test=$(pip3 install --dry-run pip 2>&1 || true)
+        if echo "$pip_test" | grep -q "externally-managed"; then
             pip_flags="--break-system-packages --quiet"
         else
             [[ -z "${VIRTUAL_ENV:-}" ]] && pip_flags="--user $pip_flags"
