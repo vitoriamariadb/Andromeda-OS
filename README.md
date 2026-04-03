@@ -47,14 +47,14 @@ Configuração zsh modular e portável para Pop!\_OS 24.04 + COSMIC DE. 23 módu
 #### Bootstrap completo (nova máquina)
 
 ```bash
-git clone git@github.com-personal:[REDACTED]/Andromeda-OS.git ~/Desenvolvimento/Andromeda-OS
+git clone git@github.com-personal:<seu-usuario>/Andromeda-OS.git ~/Desenvolvimento/Andromeda-OS
 bash ~/Desenvolvimento/Andromeda-OS/install.sh
 ```
 
 Se ainda não tiver SSH configurado, use HTTPS na primeira vez:
 
 ```bash
-git clone https://github.com/[REDACTED]/Andromeda-OS.git ~/Desenvolvimento/Andromeda-OS
+git clone https://github.com/<seu-usuario>/Andromeda-OS.git ~/Desenvolvimento/Andromeda-OS
 bash ~/Desenvolvimento/Andromeda-OS/install.sh
 # O install.sh gera a chave SSH e instrui a adicioná-la ao GitHub
 ```
