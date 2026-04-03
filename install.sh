@@ -276,7 +276,12 @@ _step_deps() {
     if command -v pip3 &>/dev/null; then
         _info "Instalando dependências Python..."
         local pip_flags="--quiet"
-        [[ -z "${VIRTUAL_ENV:-}" ]] && pip_flags="--user $pip_flags"
+        # Pop!_OS 24.04 / Ubuntu 24.04: PEP 668 bloqueia pip global
+        if pip3 install --dry-run pip 2>&1 | grep -q "externally-managed"; then
+            pip_flags="--break-system-packages --quiet"
+        else
+            [[ -z "${VIRTUAL_ENV:-}" ]] && pip_flags="--user $pip_flags"
+        fi
         if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
             _run pip3 install $pip_flags -r "$SCRIPT_DIR/requirements.txt"
         else
@@ -1053,9 +1058,19 @@ _step_deploy_symlink() {
         fi
         rm -f "$link_path"
     elif [[ -d "$link_path" ]]; then
-        # Diretorio real ainda existe — nao sobrescrever automaticamente
-        _warn "Andromeda-OS/ em $dev_dir ainda e um diretorio (nao symlink)"
-        _info "Apos verificar, remova-o e crie o symlink: ln -s $ZDOTDIR_TARGET $link_path"
+        # Diretorio real: verificar se e o mesmo clone que ZDOTDIR_TARGET
+        local remote_link remote_zdot
+        remote_link=$(git -C "$link_path" remote get-url origin 2>/dev/null || echo "")
+        remote_zdot=$(git -C "$ZDOTDIR_TARGET" remote get-url origin 2>/dev/null || echo "")
+        if [[ -n "$remote_link" && "$remote_link" == "$remote_zdot" ]]; then
+            _info "Diretório é clone do mesmo repo — convertendo em symlink..."
+            _run rm -rf "$link_path"
+            _run ln -sfn "$ZDOTDIR_TARGET" "$link_path"
+            _ok "Symlink: $link_path -> $ZDOTDIR_TARGET"
+        else
+            _warn "Andromeda-OS/ em $dev_dir e um diretorio diferente de ZDOTDIR"
+            _info "Verifique manualmente: ln -s $ZDOTDIR_TARGET $link_path"
+        fi
         return 0
     fi
 
