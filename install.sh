@@ -68,9 +68,10 @@ _ok()    { echo -e "  ${_C_GREEN}OK${_C_RESET}  $*"; }
 _warn()  { echo -e "  ${_C_YELLOW}!!${_C_RESET} $*" >&2; }
 _err()   { echo -e "  ${_C_RED}ERRO${_C_RESET} $*" >&2; exit 1; }
 
-TOTAL_STEPS=20
+TOTAL_STEPS=0
 CURRENT_STEP=0
 _EXISTING_CONFIG=false
+_DETECTED_DE="${XDG_CURRENT_DESKTOP:-}"
 
 _step() {
     ((++CURRENT_STEP))
@@ -261,7 +262,7 @@ _tui_sim_nao() {
 _step_deps() {
     _step "Verificando dependências"
 
-    local pkgs=(zsh fzf git python3-pip rsync tree jq pv)
+    local pkgs=(zsh fzf git python3-pip python3-venv rsync tree jq pv)
 
     local mgr
     mgr=$(_detect_pkg_manager)
@@ -415,6 +416,11 @@ SSH
 # --- Etapa extras: atalhos de teclado no COSMIC DE ---
 _step_atalhos() {
     _step "Atalhos de teclado (COSMIC DE)"
+
+    if [[ "$_DETECTED_DE" != *"COSMIC"* ]]; then
+        _info "Desktop nao e COSMIC (detectado: ${_DETECTED_DE:-desconhecido}) — pulando atalhos"
+        return 0
+    fi
 
     local script="$ZDOTDIR_TARGET/scripts/configurar-atalhos-cosmic.sh"
     if [[ -f "$script" ]]; then
@@ -963,6 +969,11 @@ _step_hooks() {
 _step_ritual() {
     _step "Ritual da Aurora (GPU + servicos essenciais)"
 
+    if ! command -v nvidia-smi &>/dev/null; then
+        _info "GPU Nvidia nao detectada — pulando Ritual da Aurora"
+        return 0
+    fi
+
     local scripts_dir="$ZDOTDIR_TARGET/scripts"
     local autostart_dir="$HOME/.config/autostart"
     local service_source="$scripts_dir/ritual-aurora-root.service"
@@ -1249,6 +1260,31 @@ _step_deploy_symlink() {
 main() {
     local start_time=$SECONDS
 
+    # Lista de etapas — contagem automatica
+    local -a STEPS=(
+        _step_deploy
+        _step_deps
+        _step_extras
+        _step_ssh
+        _step_fonts
+        _step_encoding_tools
+        _step_omz
+        _step_tui
+        _step_gen_config
+        _step_templates
+        _step_secrets_vault
+        _step_hooks
+        _step_ritual
+        _step_atalhos
+        _step_clonar_repos
+        _step_zshenv
+        _step_chsh
+        _step_validate
+        _step_manifest
+        _step_summary
+    )
+    TOTAL_STEPS=${#STEPS[@]}
+
     echo ""
     echo -e "  ${_C_PURPLE}${_C_BOLD}"
     echo '    _              _                               _       '
@@ -1266,26 +1302,28 @@ main() {
         echo -e "  ${_C_CYAN}  MODO: update (config.local.zsh preservado)${_C_RESET}"
     fi
 
-    _step_deploy
-    _step_deps
-    _step_extras
-    _step_ssh
-    _step_fonts
-    _step_encoding_tools
-    _step_omz
-    _step_tui
-    _step_gen_config
-    _step_templates
-    _step_secrets_vault
-    _step_hooks
-    _step_ritual
-    _step_atalhos
-    _step_clonar_repos
-    _step_zshenv
-    _step_chsh
-    _step_validate
-    _step_manifest
-    _step_summary
+    for step_fn in "${STEPS[@]}"; do
+        "$step_fn"
+    done
+
+    # Registrar manifesto de instalacao
+    local manifest_dir="${HOME}/.local/share/andromeda"
+    mkdir -p "$manifest_dir"
+    cat > "$manifest_dir/install-manifest.json" << MANIFEST
+{
+    "installed_at": "$(date -Iseconds)",
+    "zdotdir": "$ZDOTDIR_TARGET",
+    "oh_my_zsh": "$ZDOTDIR_TARGET/.oh-my-zsh",
+    "hooks_dir": "$HOME/.config/git/hooks",
+    "commit_template": "$HOME/.config/git/commit-template",
+    "autostart": "$HOME/.config/autostart/ritual_aurora.desktop",
+    "systemd_service": "/etc/systemd/system/ritual-aurora-root.service",
+    "symlink": "${DEV_DIR:-$HOME/Desenvolvimento}/Andromeda-OS",
+    "cosmic_keybindings": "$HOME/.config/cosmic/com.system76.CosmicComp/v1/custom_keybindings",
+    "cosmic_term_keybindings": "$HOME/.config/cosmic/com.system76.CosmicTerm/v1/keybindings",
+    "de": "${_DETECTED_DE:-unknown}"
+}
+MANIFEST
 
     local elapsed=$(( SECONDS - start_time ))
     echo ""

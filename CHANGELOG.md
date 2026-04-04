@@ -2,6 +2,16 @@
 
 ## [Não lançado]
 
+### Adicionado
+- `uninstall.sh`: desinstalador interativo com TUI whiptail e paleta Dracula, selecao individual de componentes, backup automatico de configs sensiveis, suporte a `--dry-run` e `--force`
+- `install.sh`: manifesto de instalacao em `~/.local/share/andromeda/install-manifest.json`
+- `install.sh`: `python3-venv` adicionado as dependencias (necessario para `python3 -m venv`)
+
+### Alterado
+- `install.sh`: contagem de etapas agora e automatica (array STEPS no main)
+- `install.sh`: etapa de atalhos COSMIC pula automaticamente se DE nao for COSMIC
+- `install.sh`: etapa Ritual da Aurora pula automaticamente se GPU Nvidia nao detectada
+
 ### Corrigido
 - `instalar-extras.sh`: uso de `local` fora de função causava falha na etapa [3/20] e impedia a instalação do fastfetch
 - `.zshrc`: `eval "$(pyenv init -)"` executava incondicionalmente, causando "command not found: pyenv" ao abrir o terminal quando pyenv não está instalado

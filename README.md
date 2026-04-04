@@ -73,6 +73,24 @@ O modo `--update` preserva `config.local.zsh`, `.zsh_secrets` e `profiles.yml` e
 ./install.sh --dry-run
 ```
 
+#### Desinstalar
+
+```bash
+bash ~/.config/zsh/uninstall.sh
+```
+
+O desinstalador é interativo (TUI whiptail) e permite selecionar quais componentes remover. Faz backup automático de configs sensíveis antes de qualquer remoção.
+
+```bash
+# Dry run (ver o que seria removido)
+bash uninstall.sh --dry-run
+
+# Remover tudo sem confirmação
+bash uninstall.sh --force
+```
+
+> Pacotes do sistema (zsh, fzf, fastfetch, earlyoom) nunca são removidos pelo desinstalador.
+
 ---
 
 ### Requisitos
@@ -263,6 +281,7 @@ Em qualquer reinstalação futura, o install.sh pede a senha GPG e restaura tudo
 ```
 Andromeda-OS/
 ├── install.sh                      # Instalador com TUI whiptail (20 etapas)
+├── uninstall.sh                    # Desinstalador interativo (seletivo)
 ├── requirements.txt                # Dependências Python
 ├── .zshrc                          # Entry point do zsh
 ├── env.zsh                         # Ambiente + Oh My Zsh + SSH agent
