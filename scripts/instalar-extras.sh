@@ -50,7 +50,7 @@ fi
 # Configura thresholds mais agressivos para workloads de dev
 # Default do pacote: 10% RAM livre — tarde demais para IDEs/containers/data science
 earlyoom_conf="/etc/default/earlyoom"
-if ! grep -q -- "-m 5" "$earlyoom_conf" 2>/dev/null; then
+if ! grep -q -- "^EARLYOOM_ARGS.*-m 5" "$earlyoom_conf" 2>/dev/null; then
     _info "Configurando earlyoom (threshold 5% RAM / 10% swap)..."
     echo 'EARLYOOM_ARGS="-m 5 -s 10 -r 3600"' | sudo tee "$earlyoom_conf" > /dev/null
     sudo systemctl restart earlyoom
