@@ -1,8 +1,13 @@
 #!/bin/bash
 #
-
-# Propósito: Ajusta a GPU e garante que serviços essenciais estejam rodando.
-#            Lógica: Só pede senha (sudo) se encontrar algo desligado.
+# USO MANUAL/DEBUG: Este script combina as partes root e user do Ritual da Aurora.
+# Em producao, o boot executa automaticamente:
+#   - ritual-aurora-root.service  (system76-power, via systemd)
+#   - ritual_aurora.desktop       (nvidia-settings, via autostart do usuario)
+# Execute este script manualmente para testar o ritual completo de uma vez.
+#
+# Proposito: Ajusta a GPU e garante que servicos essenciais estejam rodando.
+#            Logica: So pede senha (sudo) se encontrar algo desligado.
 #
 
 # Definição de Cores

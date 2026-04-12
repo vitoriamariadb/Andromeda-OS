@@ -47,6 +47,18 @@ else
     _ok "earlyoom instalado e habilitado"
 fi
 
+# Configura thresholds mais agressivos para workloads de dev
+# Default do pacote: 10% RAM livre — tarde demais para IDEs/containers/data science
+local earlyoom_conf="/etc/default/earlyoom"
+if [[ ! -f "$earlyoom_conf" ]] || ! grep -q "EARLYOOM_ARGS" "$earlyoom_conf" 2>/dev/null; then
+    _info "Configurando earlyoom (threshold 5% RAM / 10% swap)..."
+    echo 'EARLYOOM_ARGS="-m 5 -s 10 -r 3600"' | sudo tee "$earlyoom_conf" > /dev/null
+    sudo systemctl restart earlyoom
+    _ok "earlyoom configurado com thresholds de dev"
+else
+    _ok "earlyoom ja configurado"
+fi
+
 # --- Gradia: ferramenta de screenshot com anotações (Flatpak) ---
 if flatpak list 2>/dev/null | grep -q "be.alexandervanhee.gradia"; then
     _ok "Gradia já instalado"
