@@ -262,7 +262,7 @@ _tui_sim_nao() {
 _step_deps() {
     _step "Verificando dependências"
 
-    local pkgs=(zsh fzf git python3-pip python3-venv rsync tree jq pv)
+    local pkgs=(zsh fzf git python3-pip python3-venv rsync tree jq pv wl-clipboard libnotify-bin)
 
     local mgr
     mgr=$(_detect_pkg_manager)

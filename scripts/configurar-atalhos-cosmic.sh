@@ -7,6 +7,7 @@
 #   Ctrl+Shift+T  → Abrir COSMIC Terminal
 #   Alt+PrintScr  → Gradia (ferramenta de screenshot com anotações)
 #   Ctrl+V        → Colar no COSMIC Terminal (sem precisar de Shift)
+#   Ctrl+Shift+V  → Colar no COSMIC Terminal (padrão Linux)
 
 set -euo pipefail
 
@@ -77,7 +78,7 @@ if [[ -f "$TERM_KEYBINDINGS" ]]; then
     _ok "keybindings do terminal já existe — preservado"
     _info "Localização: $TERM_KEYBINDINGS"
 else
-    _info "Configurando Ctrl+V = colar no COSMIC Terminal..."
+    _info "Configurando Ctrl+V e Ctrl+Shift+V = colar no COSMIC Terminal..."
     cat > "$TERM_KEYBINDINGS" << 'RON'
 {
     custom: [
@@ -88,10 +89,17 @@ else
                 key: v,
             ),
         ),
+        (
+            action: Paste,
+            binding: (
+                modifiers: [Ctrl, Shift],
+                key: v,
+            ),
+        ),
     ],
 }
 RON
-    _ok "Ctrl+V configurado como colar no terminal"
+    _ok "Ctrl+V e Ctrl+Shift+V configurados como colar no terminal"
     _info "Reinicie o terminal para aplicar"
 fi
 
