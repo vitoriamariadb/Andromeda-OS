@@ -68,17 +68,20 @@ fi
 
 # -------------------------------------------------------------------
 # Atalhos internos do COSMIC Terminal
-# Ctrl+V = colar (padrão Linux é Ctrl+Shift+V)
-# Formato: RON — padrão do COSMIC DE
-# Arquivo: keybindings em com.system76.CosmicTerm/v1/
+# Ctrl+V e Ctrl+Shift+V = colar
+# COSMIC Terminal 1.0.x usa dois arquivos:
+#   - keybindings      (formato antigo, { custom: [...] })
+#   - shortcuts_custom (formato novo, { (binding): Action })
+# Ambos sao gerados para compatibilidade entre versoes.
 # -------------------------------------------------------------------
 TERM_KEYBINDINGS="$COSMIC_TERM_DIR/keybindings"
+TERM_SHORTCUTS="$COSMIC_TERM_DIR/shortcuts_custom"
 
 if [[ -f "$TERM_KEYBINDINGS" ]]; then
     _ok "keybindings do terminal já existe — preservado"
     _info "Localização: $TERM_KEYBINDINGS"
 else
-    _info "Configurando Ctrl+V e Ctrl+Shift+V = colar no COSMIC Terminal..."
+    _info "Configurando Ctrl+V e Ctrl+Shift+V = colar no COSMIC Terminal (keybindings)..."
     cat > "$TERM_KEYBINDINGS" << 'RON'
 {
     custom: [
@@ -99,9 +102,36 @@ else
     ],
 }
 RON
-    _ok "Ctrl+V e Ctrl+Shift+V configurados como colar no terminal"
-    _info "Reinicie o terminal para aplicar"
+    _ok "keybindings configurado"
 fi
+
+if [[ -f "$TERM_SHORTCUTS" ]]; then
+    _ok "shortcuts_custom do terminal já existe — preservado"
+    _info "Localização: $TERM_SHORTCUTS"
+else
+    _info "Configurando Ctrl+V e Ctrl+Shift+V = colar no COSMIC Terminal (shortcuts_custom)..."
+    cat > "$TERM_SHORTCUTS" << 'RON'
+{
+    (
+        modifiers: [
+            Ctrl,
+        ],
+        key: "V",
+    ): Paste,
+    (
+        modifiers: [
+            Ctrl,
+            Shift,
+        ],
+        key: "V",
+    ): Paste,
+}
+RON
+    _ok "shortcuts_custom configurado"
+fi
+
+_ok "Ctrl+V e Ctrl+Shift+V configurados como colar no terminal"
+_info "Reinicie o terminal para aplicar"
 
 # -------------------------------------------------------------------
 # Nota sobre o formato RON
@@ -113,3 +143,4 @@ fi
 # Os arquivos gerados aqui ficam em:
 #   $HOME/.config/cosmic/com.system76.CosmicComp/v1/custom_keybindings
 #   $HOME/.config/cosmic/com.system76.CosmicTerm/v1/keybindings
+#   $HOME/.config/cosmic/com.system76.CosmicTerm/v1/shortcuts_custom
