@@ -1062,6 +1062,17 @@ _step_validate() {
     [[ -f "$ZDOTDIR_TARGET/functions/andromeda-sync.zsh" ]] \
         || { _warn "andromeda-sync.zsh não encontrado — sync bidirecional indisponível"; ((erros++)); }
 
+    # Ferramentas Wayland (essenciais no COSMIC DE)
+    if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
+        command -v wl-copy &>/dev/null \
+            || { _warn "wl-copy não encontrado — clipboard no Wayland indisponível (apt install wl-clipboard)"; ((erros++)); }
+        command -v wl-paste &>/dev/null \
+            || { _warn "wl-paste não encontrado — clipboard no Wayland indisponível (apt install wl-clipboard)"; ((erros++)); }
+    fi
+
+    command -v notify-send &>/dev/null \
+        || _warn "notify-send não encontrado — notificações desktop indisponíveis (apt install libnotify-bin)"
+
     if [[ $erros -eq 0 ]]; then
         _ok "Validação pós-instalação: tudo OK"
     else
