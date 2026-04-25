@@ -53,6 +53,13 @@ done
 echo "  VACUUM"
 sqlite3 "$DB" "VACUUM;" 2>&1 || echo "  WARN: VACUUM falhou (db pode estar locked pelo applet — tentar de novo no próximo run)"
 
+# WAL checkpoint TRUNCATE — força o write-ahead-log a ser merged no main db e truncated.
+# Sem isso, o -wal pode ficar GBs mesmo com main db pequeno (applet mantém handle aberto).
+echo "  WAL checkpoint TRUNCATE"
+sqlite3 "$DB" "PRAGMA wal_checkpoint(TRUNCATE);" 2>&1 || echo "  WARN: wal_checkpoint falhou"
+
 SIZE_AFTER=$(stat -c%s "$DB" 2>/dev/null || echo 0)
-echo "  db agora: $(numfmt --to=iec "$SIZE_AFTER" 2>/dev/null || echo "$SIZE_AFTER bytes")"
+WAL_AFTER=$(stat -c%s "$DB-wal" 2>/dev/null || echo 0)
+TOTAL_AFTER=$((SIZE_AFTER + WAL_AFTER))
+echo "  db agora: $(numfmt --to=iec "$SIZE_AFTER" 2>/dev/null || echo "$SIZE_AFTER B") + wal $(numfmt --to=iec "$WAL_AFTER" 2>/dev/null || echo "$WAL_AFTER B")"
 echo "  OK"
