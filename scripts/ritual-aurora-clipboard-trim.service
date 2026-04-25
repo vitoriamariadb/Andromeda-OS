@@ -1,0 +1,7 @@
+[Unit]
+Description=Ritual da Aurora — trim do histórico do clipboard manager (libera RAM)
+Documentation=file:///home/vitoriamaria/%C3%81rea%20de%20trabalho/ritual-da-aurora-debug/04-ritual-v2/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ritual-aurora-clipboard-trim.sh
