@@ -1,0 +1,10 @@
+# /etc/default/earlyoom
+# Gerenciado pelo Ritual da Aurora — fonte de verdade em ~/.config/zsh/scripts/earlyoom.default
+#
+# -m 10,5  → SIGTERM em mem ≤10%, SIGKILL em mem ≤5% (antes do GUI freezar)
+# -s 10,5  → mesmo para swap (com zram, faz sentido subir)
+# -r 3600  → relatório a cada 1h no journal
+# -n       → notificação dbus quando matar (visível no Cosmic)
+# --avoid  → nunca matar processos críticos do desktop
+# --prefer → priorizar matar browsers/electron/build tools (devoradores típicos)
+EARLYOOM_ARGS="-m 10,5 -s 10,5 -r 3600 -n --avoid '^(systemd|Xorg|cosmic-comp|cosmic-session|cosmic-greeter|sshd|earlyoom|init|dbus-daemon|pipewire|wireplumber)$' --prefer '^(chrom|firefox|electron|node|code|Code|slack|discord|obs|java|gradle|eldenring|wine|steam|Hyprland)$'"

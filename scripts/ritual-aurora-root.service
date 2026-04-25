@@ -1,12 +1,19 @@
 [Unit]
-Description=Ritual da Aurora - GPU Performance e servicos essenciais
-After=multi-user.target earlyoom.service
+Description=Ritual da Aurora — performance, earlyoom e USB power delivery
+After=multi-user.target
 Wants=earlyoom.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/system76-power profile performance
 RemainAfterExit=yes
+# 1. Perfil de performance (não regride para Balanced/Battery)
+ExecStart=/usr/bin/system76-power profile performance
+# 2. Garante earlyoom rodando (idempotente — se já tá ativo, no-op)
+ExecStart=/bin/systemctl start earlyoom.service
+# 3. Reaplica power/control=on em todos USB devices (regra udev cobre add events; isso pega devices já enumerados)
+ExecStart=/bin/sh -c 'for f in /sys/bus/usb/devices/*/power/control; do echo on > "$f" 2>/dev/null || true; done'
+# 4. Garante root hubs em "on"
+ExecStart=/bin/sh -c 'for f in /sys/bus/usb/devices/usb*/power/control; do echo on > "$f" 2>/dev/null || true; done'
 
 [Install]
 WantedBy=multi-user.target

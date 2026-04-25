@@ -1,0 +1,10 @@
+[Unit]
+Description=Roda self-heal do Ritual da Aurora 2min pós-boot e a cada 24h
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=24h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

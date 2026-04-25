@@ -1,0 +1,8 @@
+// Permite usuários do grupo sudo chamarem system76-power profile sem senha
+// (usado pelo script manual ritual-da-aurora.sh para debug)
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("com.system76.powerdaemon") === 0 &&
+        subject.local && subject.active && subject.isInGroup("sudo")) {
+        return polkit.Result.YES;
+    }
+});

@@ -1,0 +1,7 @@
+[Unit]
+Description=Ritual da Aurora — auto-cura (reinstala arquivos sumidos por updates)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ritual-aurora-self-heal.sh
