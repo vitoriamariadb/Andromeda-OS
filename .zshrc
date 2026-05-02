@@ -38,7 +38,7 @@ autoload -U bashcompinit && bashcompinit
 # --- STATUS MONITOR (GPU) ---
 () {
     # 1. NVIDIA
-    if command -v nvidia-smi &> /dev/null; then
+    if command -v nvidia-smi &> /dev/null && nvidia-smi -L &>/dev/null; then
         local info=$(nvidia-smi --query-gpu=name,temperature.gpu --format=csv,noheader)
         local mem_data=$(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader,nounits)
         local used=$(echo $mem_data | cut -d',' -f1 | xargs)
