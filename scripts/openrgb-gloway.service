@@ -1,0 +1,21 @@
+[Unit]
+Description=Aplica Static roxo nas Gloway RGB (boot + shutdown) — Ritual da Aurora
+Documentation=file:///home/vitoriamaria/.config/zsh/scripts/openrgb-gloway-set-static.sh
+After=systemd-modules-load.service multi-user.target
+Requires=systemd-modules-load.service
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target poweroff.target
+Conflicts=shutdown.target reboot.target halt.target poweroff.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/openrgb-gloway-set-static.sh
+ExecStop=/usr/local/bin/openrgb-gloway-set-static.sh
+TimeoutStartSec=15
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

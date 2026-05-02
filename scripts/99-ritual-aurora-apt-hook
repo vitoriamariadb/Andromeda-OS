@@ -1,0 +1,11 @@
+// Roda o self-heal do Ritual da Aurora após cada operação de pacotes do apt/dpkg.
+// Fecha a janela de vulnerabilidade entre `apt full-upgrade` e o próximo timer:
+// se algum upgrade sobrescreveu /etc/default/earlyoom, /etc/sysctl.d/99-meow.conf,
+// /etc/udev/rules.d/*, etc., o self-heal restaura imediatamente.
+//
+// Fonte-de-verdade: ~/.config/zsh/scripts/99-ritual-aurora-apt-hook
+// Destino: /etc/apt/apt.conf.d/99-ritual-aurora-self-heal
+
+DPkg::Post-Invoke {
+    "if [ -x /usr/local/sbin/ritual-aurora-self-heal.sh ]; then /usr/local/sbin/ritual-aurora-self-heal.sh >/dev/null 2>&1 || true; fi";
+};
