@@ -15,9 +15,9 @@ PASS=0
 FAIL=0
 WARN=0
 
-ok()   { echo "   $*"; PASS=$((PASS+1)); }
-fail() { echo "   $*"; FAIL=$((FAIL+1)); }
-warn() { echo "  ! $*"; WARN=$((WARN+1)); }
+ok()   { echo "  [OK]   $*"; PASS=$((PASS+1)); }
+fail() { echo "  [FAIL] $*"; FAIL=$((FAIL+1)); }
+warn() { echo "  [WARN] $*"; WARN=$((WARN+1)); }
 
 echo "================================================================"
 echo "OVERCLOCK HEALTHCHECK — $(date -Iseconds)"
