@@ -112,6 +112,17 @@
 
 ## Validar pós-reboot
 ```bash
-bash "/home/vitoriamaria/Área de trabalho/overclock/healthcheck.sh"
+overclock-healthcheck.sh
 ```
-Deve mostrar: BAR1 = 8GB, RAM 3800 MT/s, WHEA limpo, kernel cmdline com todas as flags, SMBus detectado.
+Instalado em `/usr/local/bin/` pelo ritual-aurora-self-heal v3.3 (fonte:
+`~/.config/zsh/scripts/overclock-healthcheck.sh`). Valida 12 seções: kernel
+cmdline, USB power, SCSI/AHCI link PM, xHCI PCI runtime PM, systemd services,
+udev rules, SMBus/RGB, autostart, self-heal timer, BIOS state (ReBAR, RAM,
+WHEA), sensores, last self-heal run.
+
+Esperado: `RESUMO: 24+ pass | 0 fail | 0-2 warn` (warns são checks BIOS que
+pedem sudo — pra eliminá-los: `sudo overclock-healthcheck.sh`).
+
+Se `[FAIL]` em SCSI/AHCI: o drop-in
+`/etc/systemd/system/com.system76.PowerDaemon.service.d/99-restore-storage-pm.conf`
+sumiu — rodar `sudo /usr/local/sbin/ritual-aurora-self-heal.sh` pra reinstalar.
