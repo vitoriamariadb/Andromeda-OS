@@ -35,6 +35,7 @@ fi
 reload_systemd=0
 reload_udev=0
 restart_earlyoom=0
+restart_openrgb=0
 errors=0
 
 err() {
@@ -59,6 +60,7 @@ install_if_diff() {
       systemd) reload_systemd=1 ;;
       udev)    reload_udev=1 ;;
       earlyoom) restart_earlyoom=1; reload_systemd=1 ;;
+      openrgb) restart_openrgb=1 ;;
       sysctl)  : ;;
       none)    : ;;
     esac
@@ -130,16 +132,25 @@ install_if_diff "$SRC/ritual-aurora-clipboard-trim.timer"  /etc/systemd/user/rit
 # v3: OpenRGB Gloway (system-level)
 install_if_diff "$SRC/60-openrgb.rules"                    /etc/udev/rules.d/60-openrgb.rules                      644 udev
 install_if_diff "$SRC/openrgb-modules.conf"                /etc/modules-load.d/openrgb.conf                        644 none
-install_if_diff "$SRC/openrgb-gloway-set-static.sh"        /usr/local/bin/openrgb-gloway-set-static.sh             755 none
+install_if_diff "$SRC/openrgb-gloway-set-static.sh"        /usr/local/bin/openrgb-gloway-set-static.sh             755 openrgb
 install_if_diff "$SRC/openrgb-gloway.service"              /etc/systemd/system/openrgb-gloway.service              644 systemd
 
-# v3: OpenRGB Gloway (user autostart + profile como fallback)
+# v3: OpenRGB Gloway (user autostart — chama o mesmo script do service como
+# fallback se o system service falhou. Profile v5 (gloway-roxo.orp) foi
+# abandonado pq AppImage 0.9 só lê v4; script aplica via comandos diretos.)
 install_user_if_diff "$SRC/openrgb-gloway.desktop"         "$USER_HOME/.config/autostart/openrgb-gloway.desktop"   644
-install_user_if_diff "$SRC/gloway-roxo.orp"                "$USER_HOME/.config/OpenRGB/gloway-roxo.orp"            644
 
-# v3: OpenRGB AppImage (binário 33MB; fonte-de-verdade no scripts/) — restaurar
-# se sumir. install_user_if_diff usa cmp -s (caro pra 33MB mas roda 1x/dia, ok).
+# v3: OpenRGB AppImage (binário ~30MB; fonte-de-verdade no scripts/). Após
+# install, marca restart_openrgb=1 pra trigger o service e re-aplicar Static.
+# v3.1: install_user_if_diff usa fast-path stat antes de cmp -s (evita ler 30MB
+# em runs sem mudança).
+appimg_changed=0
+if [ ! -f "$USER_HOME/.local/bin/openrgb" ] || \
+   ! cmp -s "$SRC/openrgb.AppImage" "$USER_HOME/.local/bin/openrgb"; then
+  appimg_changed=1
+fi
 install_user_if_diff "$SRC/openrgb.AppImage"               "$USER_HOME/.local/bin/openrgb"                         755
+[ "$appimg_changed" = 1 ] && restart_openrgb=1
 
 # v3: Dual-boot defender (modo silent — só age se Windows recriou bootmgfw.efi)
 install_if_diff "$SRC/dual-boot-defender.sh"               /usr/local/sbin/dual-boot-defender.sh                   755 none
@@ -163,6 +174,25 @@ fi
 if [ "$restart_earlyoom" -eq 1 ]; then
   echo "  systemctl restart earlyoom"
   systemctl restart earlyoom
+fi
+
+# OpenRGB anti-regressão: sempre rodar health check do binário, mesmo sem
+# mudança de arquivo. Se o `apt upgrade` quebrou o runtime do AppImage (visto
+# 2026-05-03 com 1.0rc2 → SIGSEGV), o script openrgb-gloway-set-static.sh tem
+# auto-recovery (restore do source + re-download). Restart do service força
+# re-aplicação do Static — sobrevive a apt upgrades sem precisar reboot.
+openrgb_health=0
+if [ -x "$USER_HOME/.local/bin/openrgb" ]; then
+  if timeout 12 "$USER_HOME/.local/bin/openrgb" --version >/dev/null 2>&1; then
+    openrgb_health=1
+  else
+    echo "  openrgb segfault no health check — forçando recovery via service restart"
+    restart_openrgb=1
+  fi
+fi
+if [ "$restart_openrgb" -eq 1 ]; then
+  echo "  systemctl restart openrgb-gloway.service (post-upgrade ou recovery)"
+  systemctl restart openrgb-gloway.service 2>&1 || err "restart openrgb-gloway falhou"
 fi
 
 # Self-heal cuida do próprio binário em /usr/local/sbin

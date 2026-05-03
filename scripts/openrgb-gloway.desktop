@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=OpenRGB Gloway profile loader
-Comment=Aplica profile salvo pra parar piscar da Gloway (camada user — system service já aplica antes)
-Exec=/home/vitoriamaria/.local/bin/openrgb --profile gloway-roxo --startminimized
+Comment=Aplica Static roxo nas Gloway via script (camada user — system service já aplica antes; este é fallback se service falhar)
+Exec=/usr/local/bin/openrgb-gloway-set-static.sh
 X-GNOME-Autostart-enabled=true
 NoDisplay=true
 Terminal=false

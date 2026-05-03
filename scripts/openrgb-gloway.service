@@ -12,8 +12,8 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/bin/openrgb-gloway-set-static.sh
 ExecStop=/usr/local/bin/openrgb-gloway-set-static.sh
-TimeoutStartSec=15
-TimeoutStopSec=15
+TimeoutStartSec=120
+TimeoutStopSec=20
 StandardOutput=journal
 StandardError=journal
 
