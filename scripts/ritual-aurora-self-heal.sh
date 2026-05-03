@@ -7,6 +7,11 @@
 #     e os kernel params mitigations=off + threadirqs (além de pcie_aspm=off).
 # v3: cobre OpenRGB Gloway (udev, modules-load, systemd service com ExecStop
 #     pra que Windows não acorde com Flashing) + acpi_enforce_resources=lax.
+# v3.3: cobre AHCI link power + xHCI PCI runtime PM (vetor system76-power
+#     daemon setando med_power_with_dipm que matava charging USB e enumeração
+#     de pendrives). Adiciona validate_power_state() pra reparo em runtime
+#     e audit_bios_state() pra reportar drift de tunings BIOS-only (ReBAR,
+#     RAM speed, WHEA).
 set -u
 
 SRC=/home/vitoriamaria/.config/zsh/scripts
@@ -25,7 +30,7 @@ fi
 exec >>"$LOG" 2>&1
 
 echo "================================================================"
-echo "$(date -Iseconds) — self-heal run (v3)"
+echo "$(date -Iseconds) — self-heal run (v3.3)"
 
 if [ ! -d "$SRC" ]; then
   echo "  ERRO: $SRC não existe. Abortando."
@@ -36,6 +41,7 @@ reload_systemd=0
 reload_udev=0
 restart_earlyoom=0
 restart_openrgb=0
+restart_root_service=0
 errors=0
 
 err() {
@@ -61,6 +67,7 @@ install_if_diff() {
       udev)    reload_udev=1 ;;
       earlyoom) restart_earlyoom=1; reload_systemd=1 ;;
       openrgb) restart_openrgb=1 ;;
+      root_service) reload_systemd=1; restart_root_service=1 ;;
       sysctl)  : ;;
       none)    : ;;
     esac
@@ -115,7 +122,7 @@ ensure_kernel_option() {
 }
 
 # v1
-install_if_diff "$SRC/ritual-aurora-root.service"          /etc/systemd/system/ritual-aurora-root.service     644 systemd
+install_if_diff "$SRC/ritual-aurora-root.service"          /etc/systemd/system/ritual-aurora-root.service     644 root_service
 install_if_diff "$SRC/99-usb-kill-autosuspend.rules"       /etc/udev/rules.d/99-usb-kill-autosuspend.rules    644 udev
 install_if_diff "$SRC/earlyoom.default"                    /etc/default/earlyoom                              644 earlyoom
 install_if_diff "$SRC/50-system76-power.rules"             /etc/polkit-1/rules.d/50-system76-power.rules      644 systemd
@@ -158,6 +165,20 @@ install_if_diff "$SRC/dual-boot-defender.sh"               /usr/local/sbin/dual-
 # v3: apt hook (fecha janela entre apt full-upgrade e próximo timer)
 install_if_diff "$SRC/99-ritual-aurora-apt-hook"           /etc/apt/apt.conf.d/99-ritual-aurora-self-heal          644 none
 
+# v3.3: nova udev rule pra storage AHCI link PM + xHCI PCI runtime PM
+install_if_diff "$SRC/99-storage-no-link-pm.rules"         /etc/udev/rules.d/99-storage-no-link-pm.rules           644 udev
+
+# v3.3: script de reparo de storage PM (chamado pelo drop-in do system76-power
+# como ExecStartPost — necessário porque o daemon escreve direto via sysfs e
+# não dispara evento udev; udev rule sozinha não cobre re-aplicação após restart)
+install_if_diff "$SRC/restore-storage-pm.sh"               /usr/local/bin/restore-storage-pm.sh                    755 none
+
+# v3.3: drop-in pro com.system76.PowerDaemon.service (ExecStartPost de reparo)
+install_if_diff "$SRC/system76-power-restore-storage-pm.conf" /etc/systemd/system/com.system76.PowerDaemon.service.d/99-restore-storage-pm.conf 644 systemd
+
+# v3.3: healthcheck unificado (idempotente, sem sudo, prinata estado de TUDO)
+install_if_diff "$SRC/overclock-healthcheck.sh"            /usr/local/bin/overclock-healthcheck.sh                 755 none
+
 if [ "$reload_systemd" -eq 1 ]; then
   echo "  systemctl daemon-reload"
   systemctl daemon-reload
@@ -165,11 +186,17 @@ if [ "$reload_systemd" -eq 1 ]; then
   systemctl enable --now ritual-aurora-self-heal.timer >/dev/null 2>&1 || true
   systemctl enable --now openrgb-gloway.service >/dev/null 2>&1 || true
 fi
+if [ "$restart_root_service" -eq 1 ]; then
+  echo "  systemctl restart ritual-aurora-root.service (config mudou)"
+  systemctl restart ritual-aurora-root.service 2>&1 || err "restart ritual-aurora-root falhou"
+fi
 if [ "$reload_udev" -eq 1 ]; then
   echo "  udevadm reload + trigger"
   udevadm control --reload
   udevadm trigger --subsystem-match=usb --action=add
   udevadm trigger --subsystem-match=i2c-dev --action=add 2>/dev/null || true
+  udevadm trigger --subsystem-match=scsi_host --action=change 2>/dev/null || true
+  udevadm trigger --subsystem-match=pci --action=change 2>/dev/null || true
 fi
 if [ "$restart_earlyoom" -eq 1 ]; then
   echo "  systemctl restart earlyoom"
@@ -218,6 +245,96 @@ fi
 
 # Aplicar sysctl (idempotente)
 sysctl --system >/dev/null 2>&1 || true
+
+# v3.3: validate_power_state — repara em runtime se algo voltou pro estado errado
+# (cobre SCSI link PM, USB power/control, xHCI PCI). Esse é o ANTIDOTO ao race
+# com system76-power daemon que pode re-setar med_power_with_dipm depois do nosso
+# ritual-aurora-root.service rodar. Como o daemon escreve uma vez no startup, esse
+# check rodando a cada 1h via timer garante que voltamos ao estado correto rapidamente.
+validate_power_state() {
+  local bad=0
+  for f in /sys/class/scsi_host/host*/link_power_management_policy; do
+    [ -r "$f" ] || continue
+    local cur
+    cur="$(cat "$f" 2>/dev/null || echo unknown)"
+    if [ "$cur" != "max_performance" ]; then
+      echo "  REPARO power: $f = $cur → max_performance"
+      echo max_performance > "$f" 2>/dev/null || err "falhou escrever max_performance em $f"
+      bad=$((bad+1))
+    fi
+  done
+  for f in /sys/bus/usb/devices/*/power/control; do
+    [ -r "$f" ] || continue
+    local cur
+    cur="$(cat "$f" 2>/dev/null || echo unknown)"
+    if [ "$cur" != "on" ]; then
+      echo "  REPARO power: $f = $cur → on"
+      echo on > "$f" 2>/dev/null || err "falhou escrever on em $f"
+      bad=$((bad+1))
+    fi
+  done
+  for f in /sys/bus/usb/devices/*/power/autosuspend; do
+    [ -r "$f" ] || continue
+    local cur
+    cur="$(cat "$f" 2>/dev/null || echo unknown)"
+    if [ "$cur" != "-1" ]; then
+      echo "  REPARO power: $f = $cur → -1"
+      echo -1 > "$f" 2>/dev/null || err "falhou escrever -1 em $f"
+      bad=$((bad+1))
+    fi
+  done
+  for f in /sys/bus/pci/drivers/xhci_hcd/*/power/control; do
+    [ -r "$f" ] || continue
+    local cur
+    cur="$(cat "$f" 2>/dev/null || echo unknown)"
+    if [ "$cur" != "on" ]; then
+      echo "  REPARO power: $f = $cur → on"
+      echo on > "$f" 2>/dev/null || err "falhou escrever on em $f"
+      bad=$((bad+1))
+    fi
+  done
+  if [ "$bad" -eq 0 ]; then
+    echo "  power-state check: OK (USB+SCSI+xHCI no estado desejado)"
+  else
+    echo "  power-state check: $bad correções aplicadas em runtime"
+  fi
+}
+validate_power_state
+
+# v3.3: audit_bios_state — apenas REPORTA drift de tunings que são BIOS-only
+# (ReBAR, RAM speed, WHEA). Não tenta consertar — se drift, user precisa ir ao
+# BIOS aplicar BIOS-CHECKLIST.md. Útil pra detectar limpeza de CMOS ou regressão.
+audit_bios_state() {
+  # ReBAR: BAR1 da RTX 4060 (0a:00.0) deve mostrar 8GB
+  local bar1
+  bar1="$(lspci -vv -s 0a:00.0 2>/dev/null | grep 'Region 1:' | head -1)"
+  if [ -n "$bar1" ]; then
+    if echo "$bar1" | grep -q '8G'; then
+      echo "  bios-audit: ReBAR OK (BAR1=8GB)"
+    else
+      echo "  bios-audit: AVISO ReBAR drift — esperado 8GB, lspci mostra: $bar1"
+    fi
+  fi
+  # RAM speed: deve ser 3800 MT/s (XMP Profile1)
+  local ram_speed
+  ram_speed="$(dmidecode -t memory 2>/dev/null | grep -E 'Configured Memory Speed' | head -1 | awk '{print $4}')"
+  if [ -n "$ram_speed" ]; then
+    if [ "$ram_speed" = "3800" ]; then
+      echo "  bios-audit: RAM speed OK (3800 MT/s)"
+    else
+      echo "  bios-audit: AVISO RAM drift — esperado 3800, dmidecode mostra: ${ram_speed} MT/s"
+    fi
+  fi
+  # WHEA / MCE pós-boot: deve ter só "In-kernel MCE decoding enabled"
+  local whea_count
+  whea_count="$(dmesg 2>/dev/null | grep -iE 'whea|machine check' | grep -viE 'In-kernel MCE decoding|MCE decoder' | wc -l)"
+  if [ "$whea_count" -eq 0 ]; then
+    echo "  bios-audit: WHEA/MCE limpo"
+  else
+    echo "  bios-audit: AVISO WHEA/MCE — $whea_count linhas de erro em dmesg"
+  fi
+}
+audit_bios_state
 
 # Defesa anti-Windows-update (silent — sai limpo se Windows não está montável)
 if [ -x /usr/local/sbin/dual-boot-defender.sh ]; then

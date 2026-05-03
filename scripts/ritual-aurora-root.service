@@ -1,5 +1,5 @@
 [Unit]
-Description=Ritual da Aurora — performance, earlyoom e USB power delivery
+Description=Ritual da Aurora — performance, earlyoom, USB/SCSI/xHCI power delivery
 After=multi-user.target
 Wants=earlyoom.service
 
@@ -14,6 +14,12 @@ ExecStart=/bin/systemctl start earlyoom.service
 ExecStart=/bin/sh -c 'for f in /sys/bus/usb/devices/*/power/control; do echo on > "$f" 2>/dev/null || true; done'
 # 4. Garante root hubs em "on"
 ExecStart=/bin/sh -c 'for f in /sys/bus/usb/devices/usb*/power/control; do echo on > "$f" 2>/dev/null || true; done'
+# 5. Reaplica autosuspend=-1 em devices USB existentes (cobre runtime; udev rule só age em add)
+ExecStart=/bin/sh -c 'for f in /sys/bus/usb/devices/*/power/autosuspend; do [ -w "$f" ] && echo -1 > "$f" 2>/dev/null || true; done'
+# 6. Força AHCI link power para max_performance (anti system76-power daemon que seta med_power_with_dipm)
+ExecStart=/bin/sh -c 'for f in /sys/class/scsi_host/host*/link_power_management_policy; do echo max_performance > "$f" 2>/dev/null || true; done'
+# 7. Força xHCI host controllers PCI runtime PM em "on"
+ExecStart=/bin/sh -c 'for f in /sys/bus/pci/drivers/xhci_hcd/*/power/control; do [ -w "$f" ] && echo on > "$f" 2>/dev/null || true; done'
 
 [Install]
 WantedBy=multi-user.target

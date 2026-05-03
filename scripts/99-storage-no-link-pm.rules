@@ -1,0 +1,19 @@
+# Ritual da Aurora v3.3 — bloqueia link power management de storage e xHCI
+#
+# Por que: system76-power daemon seta link_power_management_policy=med_power_with_dipm
+# em todos /sys/class/scsi_host/* no boot, mesmo com profile=performance. Isso faz
+# storage AHCI dormir, matando charging USB de mouse/teclado/controles e travando
+# enumeração de pendrives. Vetor não coberto pelo usbcore.autosuspend=-1 (que só age
+# em USB devices, não no link AHCI por baixo).
+#
+# Cobre também xHCI host controller PCI runtime PM (regressão preventiva caso
+# power-profiles-daemon entre via dep do Cosmic ou kernel 6.18+ mude default).
+#
+# Anti-regressão: aplicado em ACTION=="add" (boot) E ACTION=="change" (quando
+# udevadm trigger é re-rodado pelo self-heal a cada 1h).
+
+# AHCI / SATA link power — força max_performance em todos scsi_host (8 hosts)
+ACTION=="add|change", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="max_performance"
+
+# xHCI host controller PCI runtime PM — força "on"
+ACTION=="add|change", SUBSYSTEM=="pci", DRIVER=="xhci_hcd", ATTR{power/control}="on"
